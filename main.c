@@ -100,7 +100,7 @@ main(int argc, char* argv[])
 
 	SystemClock48MHz();
 
-	
+
 	// By customizing __initialize_args() it is possible to pass arguments,
 	// for example when running tests with semihosting you can pass various
 	// options to the test.
@@ -232,6 +232,34 @@ void TIM2_IRQHandler()
 		TIM2->SR &= ~(TIM_SR_UIF);	/* Clear update interrupt flag */
 		TIM2->CR1 |= TIM_CR1_CEN;	/* Restart stopped timer */
 	}
+}
+
+
+/*
+ * Reset led display (RES# = PB4)
+ * - make pin PB4 = 0, wait for a few ms
+ * - make pin PB4 = 1, wait for a few ms
+ *
+ */
+void led_display_init() {
+//init commands to display
+
+		//unsigned char oled_init_cmds[] = { 0xAE, 0x20, 0x00, 0x40, 0xA0 | 0x01, 0xA8, ... };
+		//see lab website
+		//oled_Write_Cmd
+		for(unsigned int i = 0; i < sizeof(oled_init_cmds); i++) {
+		oled_Write_Cmd(oled_init_cmds[i]);
+	}
+}
+
+
+void oled_Write_Cmd(unsigned char cmd) {
+	/* make pin PB6 = CS# = 1 */
+	/* make pin PB7 = D/C# = 0 */
+	/* make pin PB6 = CS# = 0 */
+	oled_Write(cmd); /* your function for SPI Tx */
+	/* make pin PB6 = CS# = 1 */
+
 }
 
 
