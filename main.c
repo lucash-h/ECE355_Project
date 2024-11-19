@@ -122,10 +122,13 @@ main(int argc, char* argv[])
 
 	myGPIOA_Init();		/* Initialize I/O port PA */
 	myGPIOB_Init();		/* Initialize I/O port PB */
+	myGPIOC_Init();		/* Initialize I/O port PC */
 	myTIM2_Init();		/* Initialize timer TIM2 */
 
 	while (1)
-	{
+	{	//right now when the button is pressed the led will switch between blue and green
+		//what i want to do is do that aaaand also set the display to show the frequency and period of the signal
+		//but I guess I should probably get the display and the user button working first huhuhuh
 		/* If button is pressed, switch between blue and green LEDs */
 		if((GPIOA->IDR & GPIO_IDR_0) != 0)
 		{

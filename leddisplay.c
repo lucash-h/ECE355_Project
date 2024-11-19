@@ -318,8 +318,17 @@ void refresh_OLED( void )
        - for each c = ASCII code = Buffer[0], Buffer[1], ...,
            send 8 bytes in Characters[c][0-7] to LED Display
     */
+   //added
+   //page & segment addresses for frequency
+   
+    oled_Write_Cmd( 0xB2 ); // Set Page Address (0xB and then page num)
+    oled_Write_Cmd( 0x03 ); // bottom top half of segment 0011
+    oled_Write_Cmd( 0x00 ); // upper half of segment 0000
 
-    ...
+   for(int i = 0; i < sizeof(Buffer); i++) {
+    
+   }
+    
 
 
     snprintf( Buffer, sizeof( Buffer ), "F: %5u Hz", Freq );
@@ -328,8 +337,12 @@ void refresh_OLED( void )
        - for each c = ASCII code = Buffer[0], Buffer[1], ...,
            send 8 bytes in Characters[c][0-7] to LED Display
     */
+    //up to 16 iterations or until you hit '\0'
 
-    ...
+    //page & segment addresses for resistance
+    oled_Write_Cmd( 0xB3 ); // Set Page Address (0xB and then page num)
+    oled_Write_Cmd( 0x03 ); // bottom top half of segment 0011
+    oled_Write_Cmd( 0x00 ); // upper half of segment 0000
 
 
 	/* Wait for ~100 ms (for example) to get ~10 frames/sec refresh rate 
@@ -342,21 +355,22 @@ void refresh_OLED( void )
 
 
 void oled_Write_Cmd( unsigned char cmd )
-{
-    ... // make PB6 = CS# = 1
-    ... // make PB7 = D/C# = 0
-    ... // make PB6 = CS# = 0
+{//added
+    GPIOB->BSRR = GPIO_BSRR_BS_6;  // make PB6 = CS# = 1 set register
+    GPIOB->BSRR = GPIO_BSRR_BR_7; // make PB7 = D/C# = 0 reset register
+    GPIOB->BSRR = GPIO_BSRR_BR_6; // make PB6 = CS# = 0  reset register
     oled_Write( cmd );
-    ... // make PB6 = CS# = 1
+    GPIOB->BSRR = GPIO_BSRR_BS_6; // make PB6 = CS# = 1 reset register
 }
 
 void oled_Write_Data( unsigned char data )
-{
-    ... // make PB6 = CS# = 1
-    ... // make PB7 = D/C# = 1
-    ... // make PB6 = CS# = 0 
+{//added
+    
+    GPIOB->BSRR = GPIO_BSRR_BS_6; // make PB6 = CS# = 1
+    GPIOB->BSRR = GPIO_BSRR_BS_7; // make PB7 = D/C# = 1
+    GPIOB->BSRR = GPIO_BSRR_BR_6; // make PB6 = CS# = 0 
     oled_Write( data );
-    ... // make PB6 = CS# = 1
+    GPIOB->BSRR = GPIO_BSRR_BS_6; // make PB6 = CS# = 1
 }
 
 
@@ -384,9 +398,15 @@ void oled_config( void )
 {
 
 // Don't forget to enable GPIOB clock in RCC
+    //pretty sure thats just having an init for gpiob
+        //which can be found in main.c
 // Don't forget to configure PB3/PB5 as AF0
+
 // Don't forget to enable SPI1 clock in RCC
 
+   /*
+   WHAT THE FUCK IS THISSSSS
+   */
     SPI_Handle.Instance = SPI1;
 
     SPI_Handle.Init.Direction = SPI_DIRECTION_1LINE;
@@ -414,7 +434,10 @@ void oled_config( void )
        - make pin PB4 = 0, wait for a few ms
        - make pin PB4 = 1, wait for a few ms
     */
-    ...
+   //added
+    GPIOB->BSRR = GPIO_BSRR_BR_4; // set pb4 low
+    HAL_Delay( 10 ); // wait for 10 ms
+    GPIOB->BSRR = GPIO_BSRR_BS_4; // set pb4 high
 
 
 //
@@ -431,8 +454,15 @@ void oled_config( void )
            set starting SEG = 0
            call oled_Write_Data( 0x00 ) 128 times
     */
-
-    ...
+    int page_num = 8;
+    for(int i = 0; i < page_num; i++) {;
+        int seg_num = 8;
+        
+        for(int j = 0; j < starting_seg, j++) {
+            oled_Write_Data( 0x00 );
+        }
+        
+    }
 
 
 }
