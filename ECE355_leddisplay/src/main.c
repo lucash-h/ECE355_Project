@@ -285,14 +285,19 @@ main(int argc, char* argv[])
 {
 
 	SystemClock48MHz();
+	trace_printf("\nMADE IT PAST SYSTEMCLOCK INIT\n");
 
     //... A bunch of port and timer configurations
 	TIM3_config();
+	trace_printf("\nMADE IT PAST TIM3CONFIG\n");
+
 	oled_config();
+	trace_printf("\nMADE IT PAST OLED CONFIG\n");
 
 	while (1)
 	{
-
+		trace_printf("\nFREQUENCY IS: %d\n", Freq);
+		trace_printf("\nRESISTANCE IS: %d\n", Res);
         //...
 
 		Freq = 100;
@@ -300,9 +305,19 @@ main(int argc, char* argv[])
 
 		refresh_OLED();
 
-        //polling delay using tim3
-        TIM3->CNT = 0;
-        while(TIM3->CNT < 1000);
+		// Reset the counter and clear the UIF flag
+		TIM3->CNT = 0;
+		TIM3->SR &= ~TIM_SR_UIF;  // Clear the UIF flag
+
+		// Wait for UIF flag to be set (indicating the timer overflowed)
+		while ((TIM3->SR & TIM_SR_UIF) == 0);  // Poll for UIF flag
+
+		// Clear the UIF flag
+		TIM3->SR &= ~TIM_SR_UIF;
+
+        trace_printf("\nFREQUENCY IS: %d\n", Freq);
+        trace_printf("\nRESISTANCE IS: %d\n", Res);
+
 
 	}
 }
@@ -352,6 +367,7 @@ void refresh_OLED( void )
 
 	for(unsigned int i = 0; i < sizeof(Buffer) && Buffer[i] != '\0'; i++) {
 		unsigned char c = Buffer[i];
+		trace_printf("\nChar in buffer is *%u* at pos %*d*\n", c, i);
 		for(int j = 0; j < 8; j++) {
 			oled_Write_Data(Characters[c][j]); //grabs the character & relevant bytes from the array
 		}
@@ -362,8 +378,15 @@ void refresh_OLED( void )
        - You should use TIM3 to implement this delay (e.g., via polling)
     */
 
-	TIM3-> CNT = 0; //use counter register for 100 ms
-	while(TIM3->CNT < 100);
+	TIM3->CNT = 0;//doesnt necessarily need this
+	TIM3->SR &= ~TIM_SR_UIF;//clear uif flag
+	//poll for uif flag to be set
+	while((TIM3->SR & TIM_SR_UIF) == 0) {
+		//wait for tim delay
+	}
+
+	//make sure the uif flag is cleared
+	TIM3->SR &= ~TIM_SR_UIF;
 
 }
 
@@ -379,7 +402,7 @@ void oled_Write_Cmd( unsigned char cmd )
 
 void oled_Write_Data( unsigned char data )
 {//added
-
+	//trace_printf("\nPrinting %u\n", data);
     GPIOB->BSRR = GPIO_BSRR_BS_6; // make PB6 = CS# = 1
     GPIOB->BSRR = GPIO_BSRR_BS_7; // make PB7 = D/C# = 1
     GPIOB->BSRR = GPIO_BSRR_BR_6; // make PB6 = CS# = 0
@@ -416,16 +439,15 @@ void oled_Write( unsigned char Value )
 void oled_config( void )
 {
 
-// Don't forget to enable GPIOB clock in RCC
+	// Don't forget to enable GPIOB clock in RCC
     RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
 
-// Don't forget to configure PB3/PB5 as AF0
+    // Don't forget to configure PB3/PB5 as AF0
     GPIOB->MODER |= (GPIO_MODER_MODER3_1 | GPIO_MODER_MODER5_1);  // Set PB3, PB5 to alternate function
 	GPIOB->AFR[0] |= (0x00 << 12) | (0x00 << 20);  // SPI1 SCK on PB3, MOSI on PB5
 
 	// Configure PB6 (CS#) and PB7 (D/C#) as outputs
     GPIOB->MODER |= (GPIO_MODER_MODER6_0 | GPIO_MODER_MODER7_0); // Set PB6, PB7 to output mode
-
 
 // Don't forget to enable SPI1 clock in RCC
 
@@ -461,11 +483,9 @@ void oled_config( void )
     */
     //...
     GPIOB->BRR = (1 << 4); //set bit 4 of gpio 4 to low
-    HAL_Delay(10);
 	//probably want a delay
 	GPIOB->BSRR = (1 << 4); //set bit 4 of gpio to high
-	HAL_Delay(10);
-
+	//probably want a delay
 //
 // Send initialization commands to LED Display
 //
