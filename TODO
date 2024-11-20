@@ -1,5 +1,0 @@
-- The button shit should be working, 
-- now I should figure out the display
-- Assign two different values to each led like maybe 1.023 and 6.123 for ex
-- Then make the display work with the interrupt to display either value to simulate switching in between ne555 & function generator
-- 
