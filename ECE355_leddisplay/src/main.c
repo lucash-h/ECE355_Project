@@ -67,11 +67,8 @@ unsigned int Res = 0;   // Example: measured resistance value (global variable)
 void oled_Write(unsigned char);
 void oled_Write_Cmd(unsigned char);
 void oled_Write_Data(unsigned char);
-
 void oled_config(void);
-
 void TIM3_config(void);
-
 void refresh_OLED(void);
 
 
@@ -303,7 +300,9 @@ main(int argc, char* argv[])
 
 		refresh_OLED();
 
-		HAL_Delay(1000);
+        //polling delay using tim3
+        TIM3->CNT = 0;
+        while(TIM3->CNT < 1000);
 
 	}
 }
