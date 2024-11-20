@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include "diag/Trace.h"
 #include "cmsis/cmsis_device.h"
+#include "stm32f051x8.h"
 
 // ----------------------------------------------------------------------------
 //
@@ -45,6 +46,10 @@
 #define myTIM2_PRESCALER ((uint16_t)0x0000)
 /* Maximum possible setting for overflow */
 #define myTIM2_PERIOD ((uint32_t)0xFFFFFFFF)
+
+//manually because stm32f051x8.h was being annoying
+#define GPIO_IDR_ID0        (0x00000001U)  // Mask for pin 0 (PA0)
+
 
 void myGPIOA_Init(void);
 void myTIM2_Init(void);
@@ -112,7 +117,13 @@ main(int argc, char* argv[])
 
 	while (1)
 	{
-		// Nothing is going on here...
+		if(current_state == 0) {
+			trace_printf("\nPA2 is OFF\n");
+		} else {
+			trace_printf("\nPA2 is ON\n");
+		}
+		//delay loop
+		for(int i = 0; i < 100; i++);
 
 	}
 
@@ -226,14 +237,25 @@ void myEXTI_Init()
 void EXTI0_1_IRQHandler() {
     if((EXTI->PR & EXTI_PR_PR0) != 0) { //if pending register is set
         EXTI->PR |= EXTI_PR_PR0; //clear pending register
+
+        trace_printf("\nBUTTON PRESSED\n");
+
+        uint32_t debounce_count = 0;
+        while((GPIOA->IDR & GPIO_IDR_ID0) != 0){
+        	debounce_count++;
+        	if(debounce_count > 10) {
+        		break;
+        	}
+        } // wait for the button to be released
+
+        trace_printf("\nBUTTON RELEASED\n");
+
         if(current_state == 0) {
 
             current_state = 1;//switch state var to other
-            trace_printf("\nPA2 IS ON\n");
 
         } else {
             current_state = 0;
-            trace_printf("PA2 IS OFF");
         }
     }
 }
@@ -305,7 +327,7 @@ void EXTI2_3_IRQHandler()
 		// NOTE: A pending register (PR) bit is cleared
 		// by writing 1 to it.
 		EXTI->PR |= EXTI_PR_PR2;
-		
+
 	}
 }
 
