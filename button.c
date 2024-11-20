@@ -220,44 +220,20 @@ void myEXTI_Init()
 	NVIC_EnableIRQ(EXTI2_3_IRQn);
 }
 
-/* FOR FINAL PRODUCT WITH PA1 AND PA2 SWITCHING
-void EXTI0_1_IRQHandler() {
-    if((EXTI->PR & EXTI_PR_PR0) != 0) { //if pending register is set
-        EXTI->PR |= EXTI_PR_PR0; //clear pending register
-        if(current_state == 0) {
-
-            current_state = 1;//switch state var to other
-            trace_printf("Switching to PA2\n");
-
-            //configure PA1 as input and PA2 as output
-            GPI0A->MODER &= ~(GPIO_MODER_MODER1); //Clear mode bits for PA1 -> input
-            GPIOA->MODER |= ~(GPIO_MODER_MODER2); //Set mode bits for PA2 -> output
-
-        } else {
-            current_state = 0;
-            trace_printf("Switching to PA1\n");
-            GPIOA->MODER &= ~(GPIO_MODER_MODER2); // Clear mode bits for PA2 -> input
-            GPIOA->MODER |= GPIO_MODER_MODER1;    // Set mode bits for PA1 -> output
-        }
-    }
-}
-*/
 
 //FOR TESTING JUST THE BUTTON, USING A SWITCH IN BETWEEN NOTHING AND PA2(FUNCTION GENERATOR FROM FIRST PART)
+//For final test use function gen and ne555
 void EXTI0_1_IRQHandler() {
     if((EXTI->PR & EXTI_PR_PR0) != 0) { //if pending register is set
         EXTI->PR |= EXTI_PR_PR0; //clear pending register
         if(current_state == 0) {
 
             current_state = 1;//switch state var to other
-            trace_printf("Switching PA2 TO OUTPUT\n");
+            trace_printf("\nPA2 IS ON\n");
 
-            GPIOA->MODER &= ~(GPIO_MODER_MODER2);  // Clear mode bits for PA2
-            GPIOA->MODER |= GPIO_MODER_MODER2_0;   // Set PA2 to output mode
         } else {
             current_state = 0;
-            trace_printf("Switching PA2 TO INPUT\n");
-            GPIOA->MODER &= ~(GPIO_MODER_MODER2); // Clear mode bits for PA2 -> input
+            trace_printf("PA2 IS OFF");
         }
     }
 }

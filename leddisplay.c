@@ -60,8 +60,8 @@
 ...
 
 
-unsigned int Freq = 0;  // Example: measured frequency value (global variable)
-unsigned int Res = 0;   // Example: measured resistance value (global variable)
+unsigned int Freq = 3000;  // Example: measured frequency value (global variable)
+unsigned int Res = 4000;   // Example: measured resistance value (global variable)
 
 
 void oled_Write(unsigned char);
@@ -325,8 +325,11 @@ void refresh_OLED( void )
     oled_Write_Cmd( 0x03 ); // bottom top half of segment 0011
     oled_Write_Cmd( 0x00 ); // upper half of segment 0000
 
-   for(int i = 0; i < sizeof(Buffer); i++) {
-    
+   for(int i = 0; i < sizeof(Buffer) && Buffer[i] != '\0'; i++) {
+        unsigned char c = Buffer[i];
+        for (int j = 0; j < 8; j++) {
+            oled_Write_Data(Characters[c][j]); //grabs the character & relevant bytes from the array
+        }
    }
     
 
@@ -344,12 +347,21 @@ void refresh_OLED( void )
     oled_Write_Cmd( 0x03 ); // bottom top half of segment 0011
     oled_Write_Cmd( 0x00 ); // upper half of segment 0000
 
+    for(int i = 0; i < sizeof(Buffer) && Buffer[i] != '\0'; i++) {
+        unsigned char c = Buffer[i];
+        for(j = 0; j < 8; j++) {
+            oled_Write_Data(Characters[c][j]); //grabs the character & relevant bytes from the array
+        }
+    }
 
 	/* Wait for ~100 ms (for example) to get ~10 frames/sec refresh rate 
        - You should use TIM3 to implement this delay (e.g., via polling)
     */
-
-    ...
+   while refresh rate is less than 10 frames per second
+    {
+        //wait
+    }
+    
 
 }
 
@@ -379,7 +391,9 @@ void oled_Write( unsigned char Value )
 
     /* Wait until SPI1 is ready for writing (TXE = 1 in SPI1_SR) */
 
-    ...
+    while((SPI1->SR & SPI_SR_TXE) == 0) {
+        //wait
+    }
 
     /* Send one 8-bit character:
        - This function also sets BIDIOE = 1 in SPI1_CR1
@@ -389,7 +403,9 @@ void oled_Write( unsigned char Value )
 
     /* Wait until transmission is complete (TXE = 1 in SPI1_SR) */
 
-    ...
+    while((SPI1->SR & SPI_SR_TXE) == 0) {
+        //wait
+    }
 
 }
 
@@ -401,12 +417,11 @@ void oled_config( void )
     //pretty sure thats just having an init for gpiob
         //which can be found in main.c
 // Don't forget to configure PB3/PB5 as AF0
+    myGPIOB_Init();
 
 // Don't forget to enable SPI1 clock in RCC
 
-   /*
-   WHAT THE FUCK IS THISSSSS
-   */
+  
     SPI_Handle.Instance = SPI1;
 
     SPI_Handle.Init.Direction = SPI_DIRECTION_1LINE;
@@ -454,17 +469,40 @@ void oled_config( void )
            set starting SEG = 0
            call oled_Write_Data( 0x00 ) 128 times
     */
-    int page_num = 8;
-    for(int i = 0; i < page_num; i++) {;
-        int seg_num = 8;
+   //added --> pretty sure this is wrong
+    int pages = 8; 
+
+    for(int i = 0; i < pages; i++) {;
+
+        oled_Write_Cmd( 0xB0 + i ); // Set Page Address (0xB and then page num)
+        oled_Write_Cmd(0x00);     // Set lower column address
+        oled_Write_Cmd(0x10);     // Set higher column address
         
-        for(int j = 0; j < starting_seg, j++) {
+        for(int j = 0; j < 128, j++) {
             oled_Write_Data( 0x00 );
         }
         
     }
 
 
+}
+
+/*
+Configures Clock for GPIOB
+Configures PB3 & PB5 as AF0
+*/
+
+void myGPIOB_Init() {
+    // Enable clock for GPIOB
+    RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+
+    // Set PB3 and PB5 as AF0
+    GPIOB->MODER &= ~(GPIO_MODER_MODE3 | GPIO_MODER_MODE5);
+    GPIOB->MODER |= (GPIO_MODER_MODE3_1 | GPIO_MODER_MODE5_1);
+
+    // Set PB3 and PB5 as AF0
+    GPIOB->AFR[0] &= ~(GPIO_AFRL_AFSEL3 | GPIO_AFRL_AFSEL5);
+    GPIOB->AFR[0] |= (GPIO_AFRL_AFSEL3_0 | GPIO_AFRL_AFSEL5_0);
 }
 
 
