@@ -68,9 +68,12 @@ void oled_Write(unsigned char);
 void oled_Write_Cmd(unsigned char);
 void oled_Write_Data(unsigned char);
 void oled_config(void);
-void myGPIO_init(void);
+void myGPIOB_Init(void);
 
 void refresh_OLED(void);
+
+void myEXTI0_1_Init(void);
+void myEXTI2_3_Init(void);
 
 
 
@@ -81,6 +84,7 @@ void myEXTI_Init(void);
 void TIM3_Init(void);
 void TIM3_delay(void);
 
+void EXTI0_1_IRQHandler(void);
 void EXTI2_3_IRQHandler(void);
 
 /* Clock prescaler for TIM2 timer: no prescaling */
@@ -97,18 +101,18 @@ SPI_HandleTypeDef SPI_Handle;
 //Taylor
 #define myTIM2_PERIOD ((uint32_t)0xFFFFFFFF)
 
-void myGPIOA_Init(void);
+//void myGPIOA_Init(void);
 //void myTIM2_Init_Taylor(void);
 //void myEXTI_Init(void);
 void myADC_Init(void);
 void myDAC_Init(void);
-float getADCValue(void);
-float convertADCVoltageToResistance(uint16_t reading);
-uint16_t getDACValue(uint16_t ADCValue);
+float getADCVoltage(void);
+float convertADCVoltageToResistance(float adcVoltage);
+uint16_t getDACVoltage(float adcVoltage);
 
-uint32_t timerTriggered = 0;
+uint32_t timerTriggered = 1;
 float period = 0;
-float volt = 0;
+float voltage = 0;
 uint16_t test = 0;
 uint16_t nut = 0;
 
@@ -333,79 +337,49 @@ main(int argc, char* argv[])
 
 
 	SystemClock48MHz();
-	trace_printf("\nPASSED THROUGH SYSTEM CLOCK\n");
 
 	myTIM2_Init();		/* Initialize timer TIM2 */
-	trace_printf("\nPASSED THROUGH TIM2 INIT\n");
-
-
 	TIM3_Init();
-	trace_printf("\nPASSED THROUGH TIM3 INIT\n");
 
-	myGPIO_init();
-	trace_printf("\nPASSED THROUGH GPIO INIT \n");
-
+	myGPIOB_Init();
 	myGPIOA_Init();
-	trace_printf("\nPASSED THROUGH GPIOA INIT\n");
 
-	myEXTI_Init();
-	//trace_printf("\nPASSED THROUGH EXTI Init\n");
+	myEXTI0_1_Init();
+	myEXTI2_3_Init();
 
 	oled_config();
-	trace_printf("\nPASSED THROUGH OLED CONFIG \n");
 
-
-
-
-	//TAYLOR FUNCTIONS
-	//myGPIOA_Init();		/* Initialize I/O port PA */
-	//myTIM2_Init();		/* Initialize timer TIM2 */
-	//myEXTI_Init();		/* Initialize EXTI */
 	myADC_Init();		/* Initialize ADC */
-	trace_printf("\nPASSED THROUGH adc init \n");
-
 	myDAC_Init();		/* Initialize DAC */
-	trace_printf("\nPASSED THROUGH dac init \n");
 
 
 	while (1)
 	{
-        //...
-        trace_printf("\nFREQUENCY IS: %d\n", Freq);
-        trace_printf("\nRESISTANCE IS: %d\n", Res);
-        if(current_state == 1) { //current state => 1 => PA2
-        	//Freq++;
-        	trace_printf("\nTRANSFER FROM PA1 TO PA2\n");
+        if(current_state == 0) { //current state => 1 => PA2
+        	//trace_printf("\nTRANSFER FROM PA1 TO PA2\n");
+        	//trace_printf("\nVALUES FROM FUNCTION GENERATOR\n");
         } else {
-        	//Res++;
-        	trace_printf("\nTRANSFER FROM PA2 TO PA1\n");
+        	//trace_printf("\nTRANSFER FROM PA2 TO PA1\n");
+        	//trace_printf("\nVALUES FROM OPTOCOUPLER & NE555 TIMER\n");
+
         }
 		//delay loop
 		TIM3_delay();
 
-		volt = getADCValue();
-		Res = convertADCVoltageToResistance(volt);
-//		trace_printf("%u\n", DAC->DHR12R1);
-		uint16_t test = getDACValue(Res);
-		trace_printf("%u\n", test);
-
-//		volt = DAC->DOR1;
-//		float test = 5000*((4095-((float)volt))/4095);
-//		trace_printf("%u\n", (uint16_t)test);
-		// Nothing is going on here...
-//		uint16_t test = convertADCVoltageToResistance(adcValue);
-//		trace_printf("%u\n", test);
-
-//		DAC->DHR12R1 = getDACValue(test);
-//		trace_printf("%u\n", DAC->DHR12R1);
+		voltage = getADCVoltage();
+		Res = convertADCVoltageToResistance(voltage);
+		uint16_t dacVoltage = getDACVoltage(voltage);
+		//trace_printf("%u\n", (uint16_t)Res);
+		Res = (uint16_t)Res;
+		//trace_printf("%u\n", dacVoltage);
 
 
 		refresh_OLED();
 
 		// Reset the counter and clear the UIF flag
 		TIM3_delay();
-		trace_printf("\nFREQUENCY IS: %d\n", Freq);
-		trace_printf("\nRESISTANCE IS: %d\n", Res);
+		//trace_printf("\nFREQUENCY IS: %d\n", Freq);
+		//trace_printf("\nRESISTANCE IS: %d\n", Res);
 
 	}
 }
@@ -456,7 +430,7 @@ void refresh_OLED( void )
 
 	for(unsigned int i = 0; i < sizeof(Buffer) && Buffer[i] != '\0'; i++) {
 		unsigned char c = Buffer[i];
-		trace_printf("\nChar in buffer is *%u* at pos %*d*\n", c, i);
+		//trace_printf("\nChar in buffer is *%u* at pos %*d*\n", c, i);
 		for(int j = 0; j < 8; j++) {
 			oled_Write_Data(Characters[c][j]); //grabs the character & relevant bytes from the array
 		}
@@ -474,22 +448,22 @@ void refresh_OLED( void )
 
 
 void myADC_Init() {
-	RCC->AHBENR |= 0x00000200;
-	GPIOA->MODER |= 0x00000c00;
-	GPIOA->PUPDR |= 0x24000000;
+//	RCC->AHBENR |= 0x00000200;
+//	GPIOA->MODER |= 0x00000c00;
+//	GPIOA->PUPDR |= 0x24000000;
 	/* Enable ADC clock */
 	RCC->APB2ENR |= 0x00000200;
 	/* Calibrate ADC and wait for it to calibrate */
 	ADC1->CR |= 80000000;
 	while ((ADC1->CR & 80000000) != 0);
 	/* Set 12-bit resolution and right data alignment for ADC */
-	ADC1->CFGR1 |= 0x00000000;
+	ADC1->CFGR1 = 0x00000000;
 	/* Enable overrun management mode*/
 	ADC1->CFGR1 |= 0x00001000;
 	/* Enable continuous conversion mode*/
 	ADC1->CFGR1 |= 0x00002000;
 	/* Set sampling time */
-	ADC1->SMPR |= 0x00000000;
+	ADC1->SMPR |= 0x00000007;
 	/* Set channel 5 to be selected */
 	ADC1->CHSELR |= 0x00000020;
 	/* Enable ADC and wait for ADC ready flag to be set by hardware*/
@@ -500,34 +474,26 @@ void myADC_Init() {
 void myDAC_Init() {
 	/* Enable DAC clock */
 	RCC->APB1ENR |= 0x20000000;
-	/* Set PA4 to analog */
-	GPIOA->MODER |= 0x00000300;
-	GPIOA->PUPDR |= 0x24000000;
 	/* Enable DAC */
 	DAC->CR |= 0x00000001;
 }
 
-float getADCValue() {
+float getADCVoltage() {
 	/* Start ADC conversion */
 	ADC1->CR |= 0x00000004;
 	/* Wait for ADC conversion to finish */
 	while((ADC1->ISR & 0x00000004) == 0);
 	/* ADC_DR value is read and EOC flag is cleared by hardware*/
-	return ((float)ADC1->DR/(float)0xFFF) * 3.3;
+	return (float)ADC1->DR;
 }
 
-float convertADCVoltageToResistance(uint16_t voltageReading) {
-	Res = (3.3 - (float)voltageReading)/(float)0xFFF;
-	Res *= (float)5000;
-	return Res;
+float convertADCVoltageToResistance(float adcVoltage) {
+	return (adcVoltage / 0xFFF) * (float)5000;
 }
 
-uint16_t getDACValue(uint16_t ADCValue) {
-	float vdda = 3.3 - 0.7;
-
-	float voltage = (((float)ADCValue*vdda)/((float)4095)) + 0.7;
-	float output = (voltage/3.3)*((float)4095);
-	return (uint16_t)output;
+uint16_t getDACVoltage(float adcVoltage) {
+	DAC->DHR12R1 = adcVoltage;
+	return (uint16_t)DAC->DOR1;
 }
 /*UP TO HERE IS FUNCTIONS FROM TAYLORS FILE*/
 
@@ -573,7 +539,7 @@ void oled_Write( unsigned char Value )
 	    }
 }
 
-void myGPIO_init(void) {
+void myGPIOB_Init(void) {
 	// GPIOB clock enable
 	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
 	//Enable SPI clock
@@ -645,11 +611,9 @@ void oled_config( void )
     */
     //...
     GPIOB->BRR = (1 << 4); //set bit 4 of gpio 4 to low
-	//probably want a delay
     TIM3_delay();
 
 	GPIOB->BSRR = (1 << 4); //set bit 4 of gpio to high
-	//probably want a delay
 	TIM3_delay();
 //
 // Send initialization commands to LED Display
@@ -772,115 +736,61 @@ void myTIM2_Init()
 
 
 
-void myEXTI_Init_temp()
-{
-    /* Map EXTI0 line to PA0 */
-	// Relevant register: SYSCFG->EXTICR[0]
-	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI0_PA;
 
-	/* EXTI0 line interrupts: set rising-edge trigger */
-	// Relevant register: EXTI->RTSR
-	EXTI->RTSR |= EXTI_RTSR_TR0;
 
-	/* Unmask interrupts from EXTI0 line */
-	// Relevant register: EXTI->IMR
-	EXTI->IMR |= EXTI_IMR_MR0;
-
-	/* Assign EXTI0 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
-	//NVIC_SetPriority(EXTI0_1_IRQn,0); doing it down below
-
-	
-	/* Enable EXTI0 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	//NVIC_EnableIRQ(EXTI0_1_IRQn); doing it down below
-
-	/* Map EXTI2 line to PA2 */
-	// Relevant register: SYSCFG->EXTICR[0]
-	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI2_PA;
-
-	/* EXTI2 line interrupts: set rising-edge trigger */
-	// Relevant register: EXTI->RTSR
-	EXTI->RTSR |= EXTI_RTSR_TR2;
-
-	/* Unmask interrupts from EXTI2 line */
-	// Relevant register: EXTI->IMR
-	EXTI->IMR |= EXTI_IMR_MR2;
-
-	/* Assign EXTI2 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
-	NVIC_SetPriority(EXTI2_3_IRQn,0);
-
-	/* Enable EXTI2 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	NVIC_EnableIRQ(EXTI2_3_IRQn);
-
-	/*PA1 INIT*/
-	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI1_PA;
-	EXTI->IMR |= EXTI_IMR_MR1;
-	EXTI->RTSR |= EXTI_RTSR_TR1;
-
-	NVIC_SetPriority(EXTI0_1_IRQn, 0);
-	NVIC_EnableIRQ(EXTI0_1_IRQn);
-
-}
-
-void myEXTI_Init()
-{/*
-    //pa0 config/mapping
-	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI0_PA;
-	EXTI->RTSR |= EXTI_RTSR_TR0;
-	EXTI->IMR |= EXTI_IMR_MR0;
-
-	//pa1 config/mapping
-	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI1_PA;
-	EXTI->IMR |= EXTI_IMR_MR1;
-	EXTI->RTSR |= EXTI_RTSR_TR1;
-
-	//set exti priority and irq for 0-1
-	NVIC_SetPriority(EXTI0_1_IRQn, 0);
-	NVIC_EnableIRQ(EXTI0_1_IRQn);
-
-	//pa2 config/mapping
-	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI2_PA;
-	EXTI->RTSR |= EXTI_RTSR_TR2;
-	EXTI->IMR |= EXTI_IMR_MR2;
-
-	//set exti priority and irq for 2-3
-	NVIC_SetPriority(EXTI2_3_IRQn,0);
-	NVIC_EnableIRQ(EXTI2_3_IRQn);*/
-	/*
-	 * Mapping exti 0 -> bit 0-3
-	 * exti 1 -> bit 4-7
-	 * exti 2 -> bit 8-11
-	 */
-
+void myEXTI0_1_Init(void) {
 	// PA0 config/mapping (EXTI0)
-	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI0; // Clear prev config
+//	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI0; // Clear prev config
 	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI0_PA; // Map EXTI0 -> PA0
-	EXTI->IMR |= EXTI_IMR_MR0;   // Unmask EXTI line 0
+
 	EXTI->RTSR |= EXTI_RTSR_TR0; // Trigger on rising edge for EXTI0
+	EXTI->IMR |= EXTI_IMR_MR0;   // Unmask EXTI line 0
+
+	//trace_printf("PA0 MAP\n");
 
 	// PA1 config/mapping (EXTI1)
 	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI1; // Clear prev config
 	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI1_PA; // Map EXTI1 -> PA1
+
+	EXTI->RTSR |= EXTI_RTSR_TR0; // Trigger on rising edge for EXTI1 for ne555 signal?
 	EXTI->IMR |= EXTI_IMR_MR1;   // Unmask EXTI line 1
-	EXTI->RTSR |= EXTI_RTSR_TR1; // Trigger on rising edge for EXTI1
 
-	// Set NVIC priority and enable IRQ for EXTI0-1
-	NVIC_SetPriority(EXTI0_1_IRQn, 0); // Set highest priority
-	NVIC_EnableIRQ(EXTI0_1_IRQn);      // Enable EXTI0_1 IRQ
+	//trace_printf("PA1 MAP\n");
 
+ // Set NVIC priority and enable IRQ for EXTI0-1
+  	NVIC_SetPriority(EXTI0_1_IRQn, 0); // Set highest priority
+  	//trace_printf("exti0-1 NVIC\n");
+
+
+
+  	NVIC_EnableIRQ(EXTI0_1_IRQn);      // Enable EXTI0_1 IRQ
+  	//trace_printf("exti0-1 NVIC\n");
+
+  	//EXTI->PR |= EXTI_PR_PR0; //clear pending interrupt for exti0
+  	//EXTI->PR |= EXTI_PR_PR1;
+  	//trace_printf("CLEAR INTERRUPT");
+
+}
+
+void myEXTI2_3_Init(void) {
 	// PA2 config/mapping (EXTI2)
 	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI2; // Clear prev config
 	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI2_PA; // Map EXTI2 -> PA2
 	EXTI->IMR |= EXTI_IMR_MR2;   // Unmask EXTI line 2
-	EXTI->RTSR |= EXTI_RTSR_TR2; // Trigger on rising edge for EXTI2
+	EXTI->RTSR |= EXTI_RTSR_TR2; // Trigger on rising edge for EXTI2 //for function generator signal
+	trace_printf("PA2 MAP\n");
 
 	// Set NVIC priority and enable IRQ for EXTI2-3
 	NVIC_SetPriority(EXTI2_3_IRQn, 0); // Set highest priority
+
+
 	NVIC_EnableIRQ(EXTI2_3_IRQn);      // Enable EXTI2_3 IRQ
+	trace_printf("exti2-3 NVIC\n");
+	EXTI->PR |= EXTI_PR_PR2;
+	trace_printf("CLEAR INTERRUPT");
+
 }
+
 
 
 //FOR TESTING JUST THE BUTTON, USING A SWITCH IN BETWEEN NOTHING AND PA2(FUNCTION GENERATOR FROM FIRST PART)
@@ -967,7 +877,7 @@ void EXTI2_3_IRQHandler()
 				trace_printf("\nVALUES FROM FUNCTION GENERATOR\n");
 				trace_printf("Period of the input signal: %f\n", (uint32_t)period);
 				trace_printf("Frequency of the input signal: %f\n", (uint32_t)Freq);
-		}
+			}
 		}
 		
 		//	- Print calculated values to the console.
@@ -1010,6 +920,60 @@ void EXTI1_IRQHandler(void) {
 }
 
 
+/*
+ * HERE FOR BACKUP FOR EXTI01 INIT AND EXTI 23 INIT
+ */
+void myEXTI_Init_temp()
+{
+    /* Map EXTI0 line to PA0 */
+	// Relevant register: SYSCFG->EXTICR[0]
+	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI0_PA;
+
+	/* EXTI0 line interrupts: set rising-edge trigger */
+	// Relevant register: EXTI->RTSR
+	EXTI->RTSR |= EXTI_RTSR_TR0;
+
+	/* Unmask interrupts from EXTI0 line */
+	// Relevant register: EXTI->IMR
+	EXTI->IMR |= EXTI_IMR_MR0;
+
+	/* Assign EXTI0 interrupt priority = 0 in NVIC */
+	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
+	//NVIC_SetPriority(EXTI0_1_IRQn,0); doing it down below
+
+
+	/* Enable EXTI0 interrupts in NVIC */
+	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
+	//NVIC_EnableIRQ(EXTI0_1_IRQn); doing it down below
+
+	/* Map EXTI2 line to PA2 */
+	// Relevant register: SYSCFG->EXTICR[0]
+	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI2_PA;
+
+	/* EXTI2 line interrupts: set rising-edge trigger */
+	// Relevant register: EXTI->RTSR
+	EXTI->RTSR |= EXTI_RTSR_TR2;
+
+	/* Unmask interrupts from EXTI2 line */
+	// Relevant register: EXTI->IMR
+	EXTI->IMR |= EXTI_IMR_MR2;
+
+	/* Assign EXTI2 interrupt priority = 0 in NVIC */
+	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
+	NVIC_SetPriority(EXTI2_3_IRQn,0);
+
+	/* Enable EXTI2 interrupts in NVIC */
+	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
+	NVIC_EnableIRQ(EXTI2_3_IRQn);
+
+	/*PA1 INIT*/
+	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI1_PA;
+	EXTI->IMR |= EXTI_IMR_MR1;
+	EXTI->RTSR |= EXTI_RTSR_TR1;
+
+	NVIC_SetPriority(EXTI0_1_IRQn, 0);
+	NVIC_EnableIRQ(EXTI0_1_IRQn);
+}
 
 
 #pragma GCC diagnostic pop
