@@ -70,6 +70,7 @@ void oled_Write_Data(unsigned char);
 void oled_config(void);
 void TIM3_config(void);
 void tim3_delay(void);
+void myGPIO_init(void);
 
 void refresh_OLED(void);
 
@@ -277,7 +278,6 @@ void SystemClock48MHz( void )
 // Update the system with the new clock frequency
 //
     SystemCoreClockUpdate();
-
 }
 
 
@@ -287,14 +287,17 @@ main(int argc, char* argv[])
 {
 
 	SystemClock48MHz();
-	trace_printf("\nMADE IT PAST SYSTEMCLOCK INIT\n");
+	//trace_printf("\nMADE IT PAST SYSTEMCLOCK INIT\n");
+
+	myGPIO_init();
+	//trace_printf("\nMADE IT PAST GPIO INIT\n");
 
     //... A bunch of port and timer configurations
 	TIM3_config();
-	trace_printf("\nMADE IT PAST TIM3CONFIG\n");
+	//trace_printf("\nMADE IT PAST TIM3CONFIG\n");
 
 	oled_config();
-	trace_printf("\nMADE IT PAST OLED CONFIG\n");
+	//trace_printf("\nMADE IT PAST OLED CONFIG\n");
 
 	while (1)
 	{
@@ -302,8 +305,8 @@ main(int argc, char* argv[])
         trace_printf("\nFREQUENCY IS: %d\n", Freq);
         trace_printf("\nRESISTANCE IS: %d\n", Res);
 
-		Freq = 100;
-		Res = 1000;
+		Freq = 0;
+		Res = 0;
 
 		refresh_OLED();
 
@@ -347,6 +350,7 @@ void refresh_OLED( void )
        }
 
 
+
     snprintf( Buffer, sizeof( Buffer ), "F: %5u Hz", Freq );
     /* Buffer now contains your character ASCII codes for LED Display
        - select PAGE (LED Display line) and set starting SEG (column)
@@ -357,29 +361,29 @@ void refresh_OLED( void )
 	oled_Write_Cmd( 0xB3 ); // Set Page Address (0xB and then page num 3)
 	oled_Write_Cmd( 0x03 ); // bottom half of segment 0011
 	oled_Write_Cmd( 0x00 ); // upper half of segment 0000
-
+/*
 	for(unsigned int i = 0; i < sizeof(Buffer) && Buffer[i] != '\0'; i++) {
 		unsigned char c = Buffer[i];
 		trace_printf("\nChar in buffer is *%u* at pos %*d*\n", c, i);
 		for(int j = 0; j < 8; j++) {
 			oled_Write_Data(Characters[c][j]); //grabs the character & relevant bytes from the array
 		}
-	}
+	}*/
 
+	for(unsigned int i = 0; i < sizeof(Buffer); i++) {
+		unsigned char c = Buffer[i];
+		trace_printf("\nChar in buffer is *%u* at pos *%d*\nWhere j is %d", c, i);
+
+		for(int j = 0; j < 8; j++) {
+			oled_Write_Data(Characters[c][j]); //grabs the character & relevant bytes from the array
+		}
+	}
 
 	/* Wait for ~100 ms (for example) to get ~10 frames/sec refresh rate
        - You should use TIM3 to implement this delay (e.g., via polling)
     */
 
-	TIM3->CNT = 0;//doesnt necessarily need this
-	TIM3->SR &= ~TIM_SR_UIF;//clear uif flag
-	//poll for uif flag to be set
-	while((TIM3->SR & TIM_SR_UIF) == 0) {
-		//wait for tim delay
-	}
-
-	//make sure the uif flag is cleared
-	TIM3->SR &= ~TIM_SR_UIF;
+	tim3_delay();
 
 }
 
@@ -424,6 +428,31 @@ void oled_Write( unsigned char Value )
 	    while((SPI1->SR & SPI_SR_TXE) == 0) {
 	        //wait
 	    }
+}
+
+void myGPIO_init(void) {
+	// GPIOB clock enable
+	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
+	//Enable SPI clock
+	RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
+
+	//init pin 4 as output
+	GPIOB->MODER |= (GPIO_MODER_MODER4_0);
+	GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_4);
+	GPIOB->OSPEEDR |= ~(GPIO_OSPEEDR_OSPEEDR4);
+	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR4);
+
+	//init pin 6
+	GPIOB->MODER |= (GPIO_MODER_MODER6_0);
+	GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_6);
+	GPIOB->OSPEEDR |= ~(GPIO_OSPEEDR_OSPEEDR6);
+	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR6);
+
+	//init pin 7
+	GPIOB->MODER |= (GPIO_MODER_MODER7_0);
+	GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_7);
+	GPIOB->OSPEEDR |= ~(GPIO_OSPEEDR_OSPEEDR7);
+	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR7);
 
 
 }
@@ -435,16 +464,6 @@ void oled_Write( unsigned char Value )
 void oled_config( void )
 {
 
-	//configure GPIOB 3 and 4
-	//configure them as inputs
-	GPIOB->MODER &= ~(GPIO_MODER_MODER3);
-	GPIOB->MODER &= ~(GPIO_MODER_MODER4);
-		//...
-
-
-	// Don't forget to enable GPIOB clock in RCC
-    RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
-
     // Don't forget to configure PB3/PB5 as AF0
     GPIOB->MODER |= (GPIO_MODER_MODER3_1 | GPIO_MODER_MODER5_1);  // Set PB3, PB5 to alternate function
 	GPIOB->AFR[0] |= (0x00 << 12) | (0x00 << 20);  // SPI1 SCK on PB3, MOSI on PB5
@@ -454,8 +473,7 @@ void oled_config( void )
 
 // Don't forget to enable SPI1 clock in RCC
 
-// Enable SPI1 clock
-	RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
+
 
     SPI_Handle.Instance = SPI1;
 
