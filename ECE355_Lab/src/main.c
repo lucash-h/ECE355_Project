@@ -43,7 +43,7 @@
 // the result is guaranteed, but for other values it might not be possible,
 // so please adjust the PLL settings in system/src/cmsis/system_stm32f0xx.c
 //
-
+//FOR STM32f051x8 microcontroller with ne555 timer(pa1), function generator, pa2, octocoupler, SSD1306 display
 
 // ----- main() ---------------------------------------------------------------
 
@@ -294,7 +294,8 @@ uint8_t current_state = 0; //0 for pa1, 1 for pa2
 
 int
 main(int argc, char* argv[])
-{
+{//uint8_t current_state = 0; //0 for pa1, 1 for pa2
+
 
 	SystemClock48MHz();
 	myGPIO_init();
@@ -303,7 +304,6 @@ main(int argc, char* argv[])
 	TIM3_Init();
 	oled_config();
 
-	EXTI2_3_IRQHandler();
 
 
 	//TAYLOR FUNCTIONS
@@ -319,12 +319,12 @@ main(int argc, char* argv[])
         //...
         trace_printf("\nFREQUENCY IS: %d\n", Freq);
         trace_printf("\nRESISTANCE IS: %d\n", Res);
-        if(current_state == 0) {
-        	Freq++;
-        	trace_printf("\nINCREMENT FREQ\n");
+        if(current_state == 1) { //current state => 1 => PA2
+        	//Freq++;
+        	trace_printf("\nTRANSFER FROM PA1 TO PA2\n");
         } else {
-        	Res++;
-        	trace_printf("\nINCREMENT RES\n");
+        	//Res++;
+        	trace_printf("\nTRANSFER FROM PA2 TO PA1\n");
         }
 		//delay loop
 		tim3_delay();
@@ -872,6 +872,7 @@ void myEXTI_Init()
 	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
 	NVIC_SetPriority(EXTI0_1_IRQn,0);
 
+	
 	/* Enable EXTI0 interrupts in NVIC */
 	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
@@ -895,6 +896,14 @@ void myEXTI_Init()
 	/* Enable EXTI2 interrupts in NVIC */
 	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
 	NVIC_EnableIRQ(EXTI2_3_IRQn);
+
+	/*PA1 INIT*/
+	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI1_PA;
+	EXTI->IMR |= EXTI_IMR_MR1;
+	EXTI->RTSR |= EXTI_RTSR_TR1;
+
+	NVIC_EnableIRQ(EXTI0_1_IRQn);
+
 }
 
 
@@ -960,27 +969,31 @@ void EXTI2_3_IRQHandler()
 		// 1. If this is the first edge:
 		//	- Clear count register (TIM2->CNT).
 		//	- Start timer (TIM2->CR1).
-		if (timerTriggered == 0) {
-			timerTriggered = 1;
-			TIM2->CNT = ((uint16_t)0x0000);
-			TIM2->CR1 |= TIM_CR1_CEN;
-		}
-		//    Else (this is the second edge):
-		//	- Stop timer (TIM2->CR1).
-		//	- Read out count register (TIM2->CNT).
-		//	- Calculate signal period and frequency.
-		else {
-			timerTriggered = 0;
-			TIM2->CR1 &= ~(TIM_CR1_CEN);
-			clockCycles = TIM2->CNT;
+		if(current_state == 1) {
+			if (timerTriggered == 0) {//not sure I actually need this tbh
+				timerTriggered = 1;
+				TIM2->CNT = ((uint16_t)0x0000);
+				TIM2->CR1 |= TIM_CR1_CEN;
+			}
+				//    Else (this is the second edge):
+				//	- Stop timer (TIM2->CR1).
+				//	- Read out count register (TIM2->CNT).
+				//	- Calculate signal period and frequency.
+			else {
+				timerTriggered = 0;
+				TIM2->CR1 &= ~(TIM_CR1_CEN);
+				clockCycles = TIM2->CNT;
 
-			period = (float)clockCycles/(float)SystemCoreClock;
-			Freq = 1/period;
-			timerTriggered = 1;
+				period = (float)clockCycles/(float)SystemCoreClock;
+				Freq = 1/period;
+				timerTriggered = 1;
 
-			trace_printf("Period of the input signal: %f\n", (uint32_t)period);
-			trace_printf("Frequency of the input signal: %f\n", (uint32_t)Freq);
+				trace_printf("\nVALUES FROM FUNCTION GENERATOR\n");
+				trace_printf("Period of the input signal: %f\n", (uint32_t)period);
+				trace_printf("Frequency of the input signal: %f\n", (uint32_t)Freq);
 		}
+		}
+		
 		//	- Print calculated values to the console.
 		//	  NOTE: Function trace_printf does not work
 		//	  with floating-point numbers: you must use
@@ -993,6 +1006,31 @@ void EXTI2_3_IRQHandler()
 		EXTI->PR |= EXTI_PR_PR2;
 
 	}
+}
+
+void EXTI1_IRQHandler(void) {
+    uint32_t clockCycles = 0;
+    if ((EXTI->PR & EXTI_PR_PR1) != 0) {
+        if (current_state == 0) {
+            if (timerTriggered == 0) {
+                timerTriggered = 1;
+                TIM2->CNT = ((uint16_t)0x0000);
+                TIM2->CR1 |= TIM_CR1_CEN;
+            } else {
+                timerTriggered = 0;
+                TIM2->CR1 &= ~(TIM_CR1_CEN);
+                clockCycles = TIM2->CNT;
+                period = (float)clockCycles / (float)SystemCoreClock;
+                Freq = 1 / period;
+                timerTriggered = 1;
+				
+				trace_printf("\nVALUES FROM NE555\n");
+                trace_printf("Period of the NE555 signal: %f\n", period);
+                trace_printf("Frequency of the NE555 signal: %f\n", Freq);
+            }
+        }
+        EXTI->PR |= EXTI_PR_PR1;
+    }
 }
 
 void SystemClock48MHz( void )

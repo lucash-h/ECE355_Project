@@ -1,0 +1,16 @@
+#ifndef OLED_DISPLAY_H
+#define OLED_DISPLAY_H
+
+#include "stm32f051x8.h"
+
+// Function prototypes
+void oled_Write(unsigned char value);
+void oled_Write_Cmd(unsigned char cmd);
+void oled_Write_Data(unsigned char data);
+void oled_config(void);
+void refresh_OLED(void);
+
+extern unsigned int Freq;
+extern unsigned int Res;
+
+#endif // OLED_DISPLAY_H
