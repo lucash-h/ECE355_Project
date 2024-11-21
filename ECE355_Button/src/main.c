@@ -54,6 +54,8 @@
 void myGPIOA_Init(void);
 void myTIM2_Init(void);
 void myEXTI_Init(void);
+void TIM3_Init(void);
+void tim3_delay(void);
 
 
 // Declare/initialize your global variables here...
@@ -114,6 +116,7 @@ main(int argc, char* argv[])
 	myGPIOA_Init();		/* Initialize I/O port PA */
 	myTIM2_Init();		/* Initialize timer TIM2 */
 	myEXTI_Init();		/* Initialize EXTI */
+	TIM3_Init();
 
 	while (1)
 	{
@@ -123,7 +126,7 @@ main(int argc, char* argv[])
 			trace_printf("\nPA2 is ON\n");
 		}
 		//delay loop
-		for(int i = 0; i < 100; i++);
+		tim3_delay();
 
 	}
 
@@ -187,6 +190,33 @@ void myTIM2_Init()
 	TIM2->DIER |= TIM_DIER_UIE;
 }
 
+void TIM3_Init(void) {
+	//enable tim 3 clock
+	RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+
+	//Set prescaler to get a 1 ms time base through 48 mhz sys clock
+	TIM3->PSC = 48000 -1; //prescaler value (48 MHz / 48000 = 1 kHz, so 1 ms per tick)
+
+	// Set auto-reload value for 100 ms (100 ticks at 1 ms per tick)
+	TIM3 -> ARR = 100 - 1; //100 ticks each 1 ms
+
+	TIM3->CR1 |= TIM_CR1_CEN;
+}
+
+//tim3 is configured specifically for 100 ms
+
+void tim3_delay(void) {
+	// Reset the counter and clear the UIF flag
+	TIM3->CNT = 0;
+	TIM3->SR &= ~TIM_SR_UIF;  // Clear the UIF flag
+
+	// Wait for UIF flag to be set (indicating the timer overflowed)
+	while ((TIM3->SR & TIM_SR_UIF) == 0);  // Poll for UIF flag
+
+	// Clear the UIF flag
+	TIM3->SR &= ~TIM_SR_UIF;
+}
+
 
 void myEXTI_Init()
 {
@@ -239,24 +269,23 @@ void EXTI0_1_IRQHandler() {
         EXTI->PR |= EXTI_PR_PR0; //clear pending register
 
         trace_printf("\nBUTTON PRESSED\n");
+        tim3_delay();
 
-        uint32_t debounce_count = 0;
+        //uint32_t debounce_count = 0;
         while((GPIOA->IDR & GPIO_IDR_ID0) != 0){
-        	debounce_count++;
-        	if(debounce_count > 10) {
-        		break;
-        	}
+            tim3_delay();
+
         } // wait for the button to be released
 
         trace_printf("\nBUTTON RELEASED\n");
-
         if(current_state == 0) {
-
-            current_state = 1;//switch state var to other
-
+        	trace_printf("CURRENT STATE WAS 0, NOW 1");
+        	current_state = 1;//switch state var to other
         } else {
-            current_state = 0;
+        	trace_printf("CURRENT STATE WAS 1, NOW 0");
+        	current_state = 0;
         }
+
     }
 }
 
