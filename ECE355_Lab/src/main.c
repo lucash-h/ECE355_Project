@@ -79,7 +79,7 @@ void myGPIOA_Init(void);
 void myTIM2_Init(void);
 void myEXTI_Init(void);
 void TIM3_Init(void);
-void tim3_delay(void);
+void TIM3_delay(void);
 
 void EXTI2_3_IRQHandler(void);
 
@@ -287,6 +287,41 @@ unsigned char Characters[][8] = {
 uint8_t current_state = 0; //0 for pa1, 1 for pa2
 
 
+void SystemClock48MHz( void )
+{
+//
+// Disable the PLL
+//
+    RCC->CR &= ~(RCC_CR_PLLON);
+//
+// Wait for the PLL to unlock
+//
+    while (( RCC->CR & RCC_CR_PLLRDY ) != 0 );
+//
+// Configure the PLL for a 48MHz system clock
+//
+    RCC->CFGR = 0x00280000;
+
+//
+// Enable the PLL
+//
+    RCC->CR |= RCC_CR_PLLON;
+
+//
+// Wait for the PLL to lock
+//
+    while (( RCC->CR & RCC_CR_PLLRDY ) != RCC_CR_PLLRDY );
+
+//
+// Switch the processor to the PLL clock source
+//
+    RCC->CFGR = ( RCC->CFGR & (~RCC_CFGR_SW_Msk)) | RCC_CFGR_SW_PLL;
+
+//
+// Update the system with the new clock frequency
+//
+    SystemCoreClockUpdate();
+}
 
 
 
@@ -298,11 +333,27 @@ main(int argc, char* argv[])
 
 
 	SystemClock48MHz();
-	myGPIO_init();
-	myGPIOA_Init();
-	myEXTI_Init();
+	trace_printf("\nPASSED THROUGH SYSTEM CLOCK\n");
+
+	myTIM2_Init();		/* Initialize timer TIM2 */
+	trace_printf("\nPASSED THROUGH TIM2 INIT\n");
+
+
 	TIM3_Init();
+	trace_printf("\nPASSED THROUGH TIM3 INIT\n");
+
+	myGPIO_init();
+	trace_printf("\nPASSED THROUGH GPIO INIT \n");
+
+	myGPIOA_Init();
+	trace_printf("\nPASSED THROUGH GPIOA INIT\n");
+
+	myEXTI_Init();
+	//trace_printf("\nPASSED THROUGH EXTI Init\n");
+
 	oled_config();
+	trace_printf("\nPASSED THROUGH OLED CONFIG \n");
+
 
 
 
@@ -311,7 +362,10 @@ main(int argc, char* argv[])
 	//myTIM2_Init();		/* Initialize timer TIM2 */
 	//myEXTI_Init();		/* Initialize EXTI */
 	myADC_Init();		/* Initialize ADC */
+	trace_printf("\nPASSED THROUGH adc init \n");
+
 	myDAC_Init();		/* Initialize DAC */
+	trace_printf("\nPASSED THROUGH dac init \n");
 
 
 	while (1)
@@ -327,7 +381,7 @@ main(int argc, char* argv[])
         	trace_printf("\nTRANSFER FROM PA2 TO PA1\n");
         }
 		//delay loop
-		tim3_delay();
+		TIM3_delay();
 
 		volt = getADCValue();
 		Res = convertADCVoltageToResistance(volt);
@@ -349,7 +403,7 @@ main(int argc, char* argv[])
 		refresh_OLED();
 
 		// Reset the counter and clear the UIF flag
-		tim3_delay();
+		TIM3_delay();
 		trace_printf("\nFREQUENCY IS: %d\n", Freq);
 		trace_printf("\nRESISTANCE IS: %d\n", Res);
 
@@ -414,154 +468,11 @@ void refresh_OLED( void )
        - You should use TIM3 to implement this delay (e.g., via polling)
     */
 
-	tim3_delay();
+	TIM3_delay();
 
 }
-/*
-void myGPIOA_Init()
-{
-	/* Enable clock for GPIOA peripheral */
-	// Relevant register: RCC->AHBENR
-/*RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
-
-	/* Configure PA2 as input */
-	// Relevant register: GPIOA->MODER
-/*GPIOA->MODER &= ~(GPIO_MODER_MODER2);
 
 
-	/* Ensure no pull-up/pull-down for PA2 */
-	// Relevant register: GPIOA->PUPDR
-/*GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPDR2);
-}
-
-/*
-void myTIM2_Init()
-{
-	/* Enable clock for TIM2 peripheral */
-	// Relevant register: RCC->APB1ENR
-	/*RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
-
-	/* Configure TIM2: buffer auto-reload, count up, stop on overflow,
-	 * enable update events, interrupt on overflow only */
-	// Relevant register: TIM2->CR1
-/*TIM2->CR1 = ((uint16_t)0x008C);
-
-	/* Set clock prescaler value */
-/*TIM2->PSC = myTIM2_PRESCALER;
-	/* Set auto-reloaded delay */
-/*TIM2->ARR = myTIM2_PERIOD;
-
-	/* Update timer registers */
-	// Relevant register: TIM2->EGR
-/*TIM2->EGR |= ((uint16_t)0x0001);
-
-	/* Assign TIM2 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[3], or use NVIC_SetPriority
-/*NVIC_SetPriority(TIM2_IRQn, 0);
-
-	/* Enable TIM2 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-/*NVIC_EnableIRQ(TIM2_IRQn);
-
-	/* Enable update interrupt generation */
-	// Relevant register: TIM2->DIER
-/*TIM2->DIER |= TIM_DIER_UIE;
-}
-
-/*
-void myEXTI_Init()
-{
-	/* Map EXTI2 line to PA2 */
-	// Relevant register: SYSCFG->EXTICR[0]
-/*SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI2_PA;
-
-	/* EXTI2 line interrupts: set rising-edge trigger */
-	// Relevant register: EXTI->RTSR
-	/*EXTI->RTSR |= EXTI_RTSR_TR2;
-
-	/* Unmask interrupts from EXTI2 line */
-	// Relevant register: EXTI->IMR
-	/*EXTI->IMR |= EXTI_IMR_MR2;
-
-	/* Assign EXTI2 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
-	/*NVIC_SetPriority(EXTI2_3_IRQn,0);
-
-	/* Enable EXTI2 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	/*NVIC_EnableIRQ(EXTI2_3_IRQn);
-}*/
-
-
-/* This handler is declared in system/src/cmsis/vectors_stm32f051x8.c *//*
-void TIM2_IRQHandler()
-{
-	/* Check if update interrupt flag is indeed set *//*
-	if ((TIM2->SR & TIM_SR_UIF) != 0)
-	{
-		trace_printf("\n*** Overflow! ***\n");
-
-		/* Clear update interrupt flag */
-		// Relevant register: TIM2->SR
-		//TIM2->SR &= ~(TIM_SR_UIF);
-
-		/* Restart stopped timer */
-		// Relevant register: TIM2->CR1
-		/*TIM2->CR1 |= TIM_CR1_CEN;
-	}
-}*/
-
-
-/* This handler is declared in system/src/cmsis/vectors_stm32f051x8.c */
-/*
-void EXTI2_3_IRQHandler()
-{
-	// Declare/initialize your local variables here...
-	uint32_t clockCycles = 0;
-	float period = 0;
-	float frequency = 0;
-
-	/* Check if EXTI2 interrupt pending flag is indeed set *//*
-	if ((EXTI->PR & EXTI_PR_PR2) != 0)
-	{
-		//
-		// 1. If this is the first edge:
-		//	- Clear count register (TIM2->CNT).
-		//	- Start timer (TIM2->CR1).
-		if (timerTriggered == 0) {
-			timerTriggered = 1;
-			TIM2->CNT = ((uint16_t)0x0000);
-			TIM2->CR1 |= TIM_CR1_CEN;
-		}
-		//    Else (this is the second edge):
-		//	- Stop timer (TIM2->CR1).
-		//	- Read out count register (TIM2->CNT).
-		//	- Calculate signal period and frequency.
-		else {
-			timerTriggered = 0;
-			TIM2->CR1 &= ~(TIM_CR1_CEN);
-			clockCycles = TIM2->CNT;
-
-			period = (float)clockCycles/(float)SystemCoreClock;
-			frequency = 1/period;
-
-			trace_printf("Period of the input signal: %.6f s  ", period);
-			trace_printf("Frequency of the input signal: %.6f Hz\n", frequency);
-		}
-		//	- Print calculated values to the console.
-		//	  NOTE: Function trace_printf does not work
-		//	  with floating-point numbers: you must use
-		//	  "unsigned int" type to print your signal
-		//	  period and frequency.
-		//
-		// 2. Clear EXTI2 interrupt pending flag (EXTI->PR).
-		// NOTE: A pending register (PR) bit is cleared
-		// by writing 1 to it.
-		EXTI->PR |= EXTI_PR_PR2;
-		//
-	}
-}
-*/
 void myADC_Init() {
 	RCC->AHBENR |= 0x00000200;
 	GPIOA->MODER |= 0x00000c00;
@@ -685,8 +596,6 @@ void myGPIO_init(void) {
 	GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_7);
 	GPIOB->OSPEEDR |= ~(GPIO_OSPEEDR_OSPEEDR7);
 	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR7);
-
-
 }
 
 /*
@@ -737,11 +646,11 @@ void oled_config( void )
     //...
     GPIOB->BRR = (1 << 4); //set bit 4 of gpio 4 to low
 	//probably want a delay
-    tim3_delay();
+    TIM3_delay();
 
 	GPIOB->BSRR = (1 << 4); //set bit 4 of gpio to high
 	//probably want a delay
-	tim3_delay();
+	TIM3_delay();
 //
 // Send initialization commands to LED Display
 //
@@ -784,7 +693,7 @@ void TIM3_Init(void) {
 
 //tim3 is configured specifically for 100 ms
 
-void tim3_delay(void) {
+void TIM3_delay(void) {
 	// Reset the counter and clear the UIF flag
 	TIM3->CNT = 0;
 	TIM3->SR &= ~TIM_SR_UIF;  // Clear the UIF flag
@@ -809,12 +718,21 @@ void myGPIOA_Init()
 	GPIOA->MODER &= ~(GPIO_MODER_MODER2);
 
 
-	/* Ensure no pull-up/pull-down(resistors) for PA0-2 */
+	/* Clear prev config pull-up/pull-down(resistors) for PA0-2 */
 	// Relevant register: GPIOA->PUPDR
 
 	GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPDR0);
 	GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPDR1);
 	GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPDR2);
+
+	//Config w pull up
+
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPDR0_0;
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPDR1_0;
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPDR2_0;
+
+
+
 
 	}
 
@@ -854,7 +772,7 @@ void myTIM2_Init()
 
 
 
-void myEXTI_Init()
+void myEXTI_Init_temp()
 {
     /* Map EXTI0 line to PA0 */
 	// Relevant register: SYSCFG->EXTICR[0]
@@ -870,12 +788,12 @@ void myEXTI_Init()
 
 	/* Assign EXTI0 interrupt priority = 0 in NVIC */
 	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
-	NVIC_SetPriority(EXTI0_1_IRQn,0);
+	//NVIC_SetPriority(EXTI0_1_IRQn,0); doing it down below
 
 	
 	/* Enable EXTI0 interrupts in NVIC */
 	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	NVIC_EnableIRQ(EXTI0_1_IRQn);
+	//NVIC_EnableIRQ(EXTI0_1_IRQn); doing it down below
 
 	/* Map EXTI2 line to PA2 */
 	// Relevant register: SYSCFG->EXTICR[0]
@@ -902,8 +820,66 @@ void myEXTI_Init()
 	EXTI->IMR |= EXTI_IMR_MR1;
 	EXTI->RTSR |= EXTI_RTSR_TR1;
 
+	NVIC_SetPriority(EXTI0_1_IRQn, 0);
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
 
+}
+
+void myEXTI_Init()
+{/*
+    //pa0 config/mapping
+	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI0_PA;
+	EXTI->RTSR |= EXTI_RTSR_TR0;
+	EXTI->IMR |= EXTI_IMR_MR0;
+
+	//pa1 config/mapping
+	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI1_PA;
+	EXTI->IMR |= EXTI_IMR_MR1;
+	EXTI->RTSR |= EXTI_RTSR_TR1;
+
+	//set exti priority and irq for 0-1
+	NVIC_SetPriority(EXTI0_1_IRQn, 0);
+	NVIC_EnableIRQ(EXTI0_1_IRQn);
+
+	//pa2 config/mapping
+	SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI2_PA;
+	EXTI->RTSR |= EXTI_RTSR_TR2;
+	EXTI->IMR |= EXTI_IMR_MR2;
+
+	//set exti priority and irq for 2-3
+	NVIC_SetPriority(EXTI2_3_IRQn,0);
+	NVIC_EnableIRQ(EXTI2_3_IRQn);*/
+	/*
+	 * Mapping exti 0 -> bit 0-3
+	 * exti 1 -> bit 4-7
+	 * exti 2 -> bit 8-11
+	 */
+
+	// PA0 config/mapping (EXTI0)
+	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI0; // Clear prev config
+	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI0_PA; // Map EXTI0 -> PA0
+	EXTI->IMR |= EXTI_IMR_MR0;   // Unmask EXTI line 0
+	EXTI->RTSR |= EXTI_RTSR_TR0; // Trigger on rising edge for EXTI0
+
+	// PA1 config/mapping (EXTI1)
+	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI1; // Clear prev config
+	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI1_PA; // Map EXTI1 -> PA1
+	EXTI->IMR |= EXTI_IMR_MR1;   // Unmask EXTI line 1
+	EXTI->RTSR |= EXTI_RTSR_TR1; // Trigger on rising edge for EXTI1
+
+	// Set NVIC priority and enable IRQ for EXTI0-1
+	NVIC_SetPriority(EXTI0_1_IRQn, 0); // Set highest priority
+	NVIC_EnableIRQ(EXTI0_1_IRQn);      // Enable EXTI0_1 IRQ
+
+	// PA2 config/mapping (EXTI2)
+	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI2; // Clear prev config
+	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI2_PA; // Map EXTI2 -> PA2
+	EXTI->IMR |= EXTI_IMR_MR2;   // Unmask EXTI line 2
+	EXTI->RTSR |= EXTI_RTSR_TR2; // Trigger on rising edge for EXTI2
+
+	// Set NVIC priority and enable IRQ for EXTI2-3
+	NVIC_SetPriority(EXTI2_3_IRQn, 0); // Set highest priority
+	NVIC_EnableIRQ(EXTI2_3_IRQn);      // Enable EXTI2_3 IRQ
 }
 
 
@@ -914,11 +890,11 @@ void EXTI0_1_IRQHandler() {
         EXTI->PR |= EXTI_PR_PR0; //clear pending register
 
         trace_printf("\nBUTTON PRESSED\n");
-        tim3_delay();
+        TIM3_delay();
 
         //uint32_t debounce_count = 0;
         while((GPIOA->IDR & GPIO_IDR_ID0) != 0){
-            tim3_delay();
+            TIM3_delay();
 
         } // wait for the button to be released
 
@@ -1033,41 +1009,6 @@ void EXTI1_IRQHandler(void) {
     }
 }
 
-void SystemClock48MHz( void )
-{
-//
-// Disable the PLL
-//
-    RCC->CR &= ~(RCC_CR_PLLON);
-//
-// Wait for the PLL to unlock
-//
-    while (( RCC->CR & RCC_CR_PLLRDY ) != 0 );
-//
-// Configure the PLL for a 48MHz system clock
-//
-    RCC->CFGR = 0x00280000;
-
-//
-// Enable the PLL
-//
-    RCC->CR |= RCC_CR_PLLON;
-
-//
-// Wait for the PLL to lock
-//
-    while (( RCC->CR & RCC_CR_PLLRDY ) != RCC_CR_PLLRDY );
-
-//
-// Switch the processor to the PLL clock source
-//
-    RCC->CFGR = ( RCC->CFGR & (~RCC_CFGR_SW_Msk)) | RCC_CFGR_SW_PLL;
-
-//
-// Update the system with the new clock frequency
-//
-    SystemCoreClockUpdate();
-}
 
 
 
