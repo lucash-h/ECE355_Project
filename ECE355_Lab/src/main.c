@@ -663,7 +663,13 @@ void TIM3_delay(void) {
 	TIM3->SR &= ~TIM_SR_UIF;  // Clear the UIF flag
 
 	// Wait for UIF flag to be set (indicating the timer overflowed)
-	while ((TIM3->SR & TIM_SR_UIF) == 0);  // Poll for UIF flag
+	int count = 0;
+	while (((TIM3->SR & TIM_SR_UIF) == 0)) {
+		if (count > 10000) {
+			break;
+		}
+		count++;// Poll for UIF flag
+	}
 
 	// Clear the UIF flag
 	TIM3->SR &= ~TIM_SR_UIF;
@@ -749,10 +755,10 @@ void myEXTI0_1_Init(void) {
 	//trace_printf("PA0 MAP\n");
 
 	// PA1 config/mapping (EXTI1)
-	SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI1; // Clear prev config
+	//SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI1; // Clear prev config
 	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI1_PA; // Map EXTI1 -> PA1
 
-	EXTI->RTSR |= EXTI_RTSR_TR0; // Trigger on rising edge for EXTI1 for ne555 signal?
+	EXTI->RTSR |= EXTI_RTSR_TR1; // Trigger on rising edge for EXTI1 for ne555 signal?
 	EXTI->IMR |= EXTI_IMR_MR1;   // Unmask EXTI line 1
 
 	//trace_printf("PA1 MAP\n");
@@ -797,7 +803,7 @@ void myEXTI2_3_Init(void) {
 //For final test use function gen and ne555
 void EXTI0_1_IRQHandler() {
     if((EXTI->PR & EXTI_PR_PR0) != 0) { //if pending register is set
-        EXTI->PR |= EXTI_PR_PR0; //clear pending register
+        //EXTI->PR |= EXTI_PR_PR0; //clear pending register
 
         trace_printf("\nBUTTON PRESSED\n");
         TIM3_delay();
@@ -818,7 +824,11 @@ void EXTI0_1_IRQHandler() {
         	current_state = 0;
         }
 
+    } else {
+    	//trace_printf("SAKLDJASLDJAS");
     }
+    EXTI->PR |= EXTI_PR_PR0; //clear pending register
+
 }
 
 
