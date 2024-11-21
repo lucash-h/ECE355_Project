@@ -340,7 +340,7 @@ void refresh_OLED( void )
     //page & segment addresses for resistance
        oled_Write_Cmd( 0xB2 ); // Set Page Address (0xB and then page num 2)
        oled_Write_Cmd( 0x03 ); // bottom half of segment 0011
-       oled_Write_Cmd( 0x00 ); // upper half of segment 0000
+       oled_Write_Cmd( 0x10 ); // upper half of segment 0000
 
        for(unsigned int i = 0; i < sizeof(Buffer) && Buffer[i] != '\0'; i++) {
            unsigned char c = Buffer[i];
@@ -360,24 +360,17 @@ void refresh_OLED( void )
 
 	oled_Write_Cmd( 0xB3 ); // Set Page Address (0xB and then page num 3)
 	oled_Write_Cmd( 0x03 ); // bottom half of segment 0011
-	oled_Write_Cmd( 0x00 ); // upper half of segment 0000
-/*
+	oled_Write_Cmd( 0x10 ); // upper half of segment 0000
+
 	for(unsigned int i = 0; i < sizeof(Buffer) && Buffer[i] != '\0'; i++) {
 		unsigned char c = Buffer[i];
 		trace_printf("\nChar in buffer is *%u* at pos %*d*\n", c, i);
 		for(int j = 0; j < 8; j++) {
 			oled_Write_Data(Characters[c][j]); //grabs the character & relevant bytes from the array
 		}
-	}*/
-
-	for(unsigned int i = 0; i < sizeof(Buffer); i++) {
-		unsigned char c = Buffer[i];
-		trace_printf("\nChar in buffer is *%u* at pos *%d*\nWhere j is %d", c, i);
-
-		for(int j = 0; j < 8; j++) {
-			oled_Write_Data(Characters[c][j]); //grabs the character & relevant bytes from the array
-		}
 	}
+
+
 
 	/* Wait for ~100 ms (for example) to get ~10 frames/sec refresh rate
        - You should use TIM3 to implement this delay (e.g., via polling)
