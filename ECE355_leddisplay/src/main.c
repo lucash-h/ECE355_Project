@@ -69,6 +69,8 @@ void oled_Write_Cmd(unsigned char);
 void oled_Write_Data(unsigned char);
 void oled_config(void);
 void TIM3_config(void);
+void tim3_delay(void);
+
 void refresh_OLED(void);
 
 
@@ -296,9 +298,9 @@ main(int argc, char* argv[])
 
 	while (1)
 	{
-		trace_printf("\nFREQUENCY IS: %d\n", Freq);
-		trace_printf("\nRESISTANCE IS: %d\n", Res);
         //...
+        trace_printf("\nFREQUENCY IS: %d\n", Freq);
+        trace_printf("\nRESISTANCE IS: %d\n", Res);
 
 		Freq = 100;
 		Res = 1000;
@@ -306,17 +308,8 @@ main(int argc, char* argv[])
 		refresh_OLED();
 
 		// Reset the counter and clear the UIF flag
-		TIM3->CNT = 0;
-		TIM3->SR &= ~TIM_SR_UIF;  // Clear the UIF flag
+		tim3_delay();
 
-		// Wait for UIF flag to be set (indicating the timer overflowed)
-		while ((TIM3->SR & TIM_SR_UIF) == 0);  // Poll for UIF flag
-
-		// Clear the UIF flag
-		TIM3->SR &= ~TIM_SR_UIF;
-
-        trace_printf("\nFREQUENCY IS: %d\n", Freq);
-        trace_printf("\nRESISTANCE IS: %d\n", Res);
 
 
 	}
@@ -343,7 +336,7 @@ void refresh_OLED( void )
 
     //page & segment addresses for resistance
        oled_Write_Cmd( 0xB2 ); // Set Page Address (0xB and then page num 2)
-       oled_Write_Cmd( 0x03 ); // bottom top half of segment 0011
+       oled_Write_Cmd( 0x03 ); // bottom half of segment 0011
        oled_Write_Cmd( 0x00 ); // upper half of segment 0000
 
        for(unsigned int i = 0; i < sizeof(Buffer) && Buffer[i] != '\0'; i++) {
@@ -362,7 +355,7 @@ void refresh_OLED( void )
     */
 
 	oled_Write_Cmd( 0xB3 ); // Set Page Address (0xB and then page num 3)
-	oled_Write_Cmd( 0x03 ); // bottom top half of segment 0011
+	oled_Write_Cmd( 0x03 ); // bottom half of segment 0011
 	oled_Write_Cmd( 0x00 ); // upper half of segment 0000
 
 	for(unsigned int i = 0; i < sizeof(Buffer) && Buffer[i] != '\0'; i++) {
@@ -435,9 +428,19 @@ void oled_Write( unsigned char Value )
 
 }
 
-
+/*
+ * SCk starts low
+ * RES is low and needs to be high pretty sure which i think is PB3-4 init
+ */
 void oled_config( void )
 {
+
+	//configure GPIOB 3 and 4
+	//configure them as inputs
+	GPIOB->MODER &= ~(GPIO_MODER_MODER3);
+	GPIOB->MODER &= ~(GPIO_MODER_MODER4);
+		//...
+
 
 	// Don't forget to enable GPIOB clock in RCC
     RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
@@ -456,13 +459,13 @@ void oled_config( void )
 
     SPI_Handle.Instance = SPI1;
 
-    SPI_Handle.Init.Direction = SPI_DIRECTION_1LINE;
-    SPI_Handle.Init.Mode = SPI_MODE_MASTER;
+    SPI_Handle.Init.Direction = SPI_DIRECTION_1LINE; //BIDIOE
+    SPI_Handle.Init.Mode = SPI_MODE_MASTER; //MSTR
     SPI_Handle.Init.DataSize = SPI_DATASIZE_8BIT;
-    SPI_Handle.Init.CLKPolarity = SPI_POLARITY_LOW;
-    SPI_Handle.Init.CLKPhase = SPI_PHASE_1EDGE;
+    SPI_Handle.Init.CLKPolarity = SPI_POLARITY_LOW; //CPOL
+    SPI_Handle.Init.CLKPhase = SPI_PHASE_1EDGE; //CPHA
     SPI_Handle.Init.NSS = SPI_NSS_SOFT;
-    SPI_Handle.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+    SPI_Handle.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256; //BR[2:0]
     SPI_Handle.Init.FirstBit = SPI_FIRSTBIT_MSB;
     SPI_Handle.Init.CRCPolynomial = 7;
 
@@ -484,8 +487,11 @@ void oled_config( void )
     //...
     GPIOB->BRR = (1 << 4); //set bit 4 of gpio 4 to low
 	//probably want a delay
+    tim3_delay();
+
 	GPIOB->BSRR = (1 << 4); //set bit 4 of gpio to high
 	//probably want a delay
+	tim3_delay();
 //
 // Send initialization commands to LED Display
 //
@@ -524,6 +530,20 @@ void TIM3_config(void) {
 	TIM3 -> ARR = 100 - 1; //100 ticks each 1 ms
 
 	TIM3->CR1 |= TIM_CR1_CEN;
+}
+
+//tim3 is configured specifically for 100 ms
+
+void tim3_delay(void) {
+	// Reset the counter and clear the UIF flag
+	TIM3->CNT = 0;
+	TIM3->SR &= ~TIM_SR_UIF;  // Clear the UIF flag
+
+	// Wait for UIF flag to be set (indicating the timer overflowed)
+	while ((TIM3->SR & TIM_SR_UIF) == 0);  // Poll for UIF flag
+
+	// Clear the UIF flag
+	TIM3->SR &= ~TIM_SR_UIF;
 }
 
 
