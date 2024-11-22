@@ -536,7 +536,7 @@ Discarded input sections
  .debug_macro   0x00000000       0x8d ./system/src/stm32f0-hal/stm32f0xx_hal_flash.o
  .debug_macro   0x00000000      0x114 ./system/src/stm32f0-hal/stm32f0xx_hal_flash.o
  .debug_line    0x00000000      0x8f0 ./system/src/stm32f0-hal/stm32f0xx_hal_flash.o
- .debug_str     0x00000000    0x6adb1 ./system/src/stm32f0-hal/stm32f0xx_hal_flash.o
+ .debug_str     0x00000000    0x6adb5 ./system/src/stm32f0-hal/stm32f0xx_hal_flash.o
  .comment       0x00000000       0x6f ./system/src/stm32f0-hal/stm32f0xx_hal_flash.o
  .debug_frame   0x00000000      0x13c ./system/src/stm32f0-hal/stm32f0xx_hal_flash.o
  .ARM.attributes
@@ -711,7 +711,7 @@ Discarded input sections
  .debug_macro   0x00000000       0x8d ./system/src/stm32f0-hal/stm32f0xx_hal_flash_ex.o
  .debug_macro   0x00000000      0x114 ./system/src/stm32f0-hal/stm32f0xx_hal_flash_ex.o
  .debug_line    0x00000000      0x99b ./system/src/stm32f0-hal/stm32f0xx_hal_flash_ex.o
- .debug_str     0x00000000    0x6af12 ./system/src/stm32f0-hal/stm32f0xx_hal_flash_ex.o
+ .debug_str     0x00000000    0x6af16 ./system/src/stm32f0-hal/stm32f0xx_hal_flash_ex.o
  .comment       0x00000000       0x6f ./system/src/stm32f0-hal/stm32f0xx_hal_flash_ex.o
  .debug_frame   0x00000000      0x180 ./system/src/stm32f0-hal/stm32f0xx_hal_flash_ex.o
  .ARM.attributes
@@ -869,7 +869,7 @@ Discarded input sections
  .debug_macro   0x00000000       0x8d ./system/src/stm32f0-hal/stm32f0xx_hal_gpio.o
  .debug_macro   0x00000000      0x114 ./system/src/stm32f0-hal/stm32f0xx_hal_gpio.o
  .debug_line    0x00000000      0x94b ./system/src/stm32f0-hal/stm32f0xx_hal_gpio.o
- .debug_str     0x00000000    0x6ad76 ./system/src/stm32f0-hal/stm32f0xx_hal_gpio.o
+ .debug_str     0x00000000    0x6ad7a ./system/src/stm32f0-hal/stm32f0xx_hal_gpio.o
  .comment       0x00000000       0x6f ./system/src/stm32f0-hal/stm32f0xx_hal_gpio.o
  .debug_frame   0x00000000       0xf8 ./system/src/stm32f0-hal/stm32f0xx_hal_gpio.o
  .ARM.attributes
@@ -1015,7 +1015,7 @@ Discarded input sections
  .debug_macro   0x00000000       0x8d ./system/src/stm32f0-hal/stm32f0xx_hal_iwdg.o
  .debug_macro   0x00000000      0x114 ./system/src/stm32f0-hal/stm32f0xx_hal_iwdg.o
  .debug_line    0x00000000      0x77a ./system/src/stm32f0-hal/stm32f0xx_hal_iwdg.o
- .debug_str     0x00000000    0x6ab4d ./system/src/stm32f0-hal/stm32f0xx_hal_iwdg.o
+ .debug_str     0x00000000    0x6ab51 ./system/src/stm32f0-hal/stm32f0xx_hal_iwdg.o
  .comment       0x00000000       0x6f ./system/src/stm32f0-hal/stm32f0xx_hal_iwdg.o
  .debug_frame   0x00000000       0x3c ./system/src/stm32f0-hal/stm32f0xx_hal_iwdg.o
  .ARM.attributes
@@ -1181,7 +1181,7 @@ Discarded input sections
  .debug_macro   0x00000000       0x8d ./system/src/stm32f0-hal/stm32f0xx_hal_pwr.o
  .debug_macro   0x00000000      0x114 ./system/src/stm32f0-hal/stm32f0xx_hal_pwr.o
  .debug_line    0x00000000      0x840 ./system/src/stm32f0-hal/stm32f0xx_hal_pwr.o
- .debug_str     0x00000000    0x6ac43 ./system/src/stm32f0-hal/stm32f0xx_hal_pwr.o
+ .debug_str     0x00000000    0x6ac47 ./system/src/stm32f0-hal/stm32f0xx_hal_pwr.o
  .comment       0x00000000       0x6f ./system/src/stm32f0-hal/stm32f0xx_hal_pwr.o
  .debug_frame   0x00000000       0xf4 ./system/src/stm32f0-hal/stm32f0xx_hal_pwr.o
  .ARM.attributes
@@ -1513,7 +1513,7 @@ Discarded input sections
  .debug_macro   0x00000000       0x8d ./system/src/stm32f0-hal/stm32f0xx_hal_tsc.o
  .debug_macro   0x00000000      0x114 ./system/src/stm32f0-hal/stm32f0xx_hal_tsc.o
  .debug_line    0x00000000      0xbd3 ./system/src/stm32f0-hal/stm32f0xx_hal_tsc.o
- .debug_str     0x00000000    0x6af26 ./system/src/stm32f0-hal/stm32f0xx_hal_tsc.o
+ .debug_str     0x00000000    0x6af2a ./system/src/stm32f0-hal/stm32f0xx_hal_tsc.o
  .comment       0x00000000       0x6f ./system/src/stm32f0-hal/stm32f0xx_hal_tsc.o
  .debug_frame   0x00000000      0x1c4 ./system/src/stm32f0-hal/stm32f0xx_hal_tsc.o
  .ARM.attributes
@@ -1599,7 +1599,7 @@ Discarded input sections
  .debug_macro   0x00000000       0xd7 ./system/src/newlib/assert.o
  .debug_macro   0x00000000      0x513 ./system/src/newlib/assert.o
  .debug_line    0x00000000      0x341 ./system/src/newlib/assert.o
- .debug_str     0x00000000     0x7820 ./system/src/newlib/assert.o
+ .debug_str     0x00000000     0x7824 ./system/src/newlib/assert.o
  .comment       0x00000000       0x6f ./system/src/newlib/assert.o
  .debug_frame   0x00000000       0x44 ./system/src/newlib/assert.o
  .ARM.attributes
@@ -1686,7 +1686,7 @@ Discarded input sections
  .debug_macro   0x00000000       0x35 ./system/src/newlib/cxx.o
  .debug_macro   0x00000000      0x513 ./system/src/newlib/cxx.o
  .debug_line    0x00000000      0x3f4 ./system/src/newlib/cxx.o
- .debug_str     0x00000000     0x84e7 ./system/src/newlib/cxx.o
+ .debug_str     0x00000000     0x84eb ./system/src/newlib/cxx.o
  .comment       0x00000000       0x6f ./system/src/newlib/cxx.o
  .debug_frame   0x00000000       0x40 ./system/src/newlib/cxx.o
  .ARM.attributes
@@ -2617,7 +2617,7 @@ Discarded input sections
  .debug_macro   0x00000000       0x8d ./system/src/cortexm/reset-hardware.o
  .debug_macro   0x00000000      0x114 ./system/src/cortexm/reset-hardware.o
  .debug_line    0x00000000      0x74b ./system/src/cortexm/reset-hardware.o
- .debug_str     0x00000000    0x6aab0 ./system/src/cortexm/reset-hardware.o
+ .debug_str     0x00000000    0x6aab4 ./system/src/cortexm/reset-hardware.o
  .comment       0x00000000       0x6f ./system/src/cortexm/reset-hardware.o
  .debug_frame   0x00000000       0x20 ./system/src/cortexm/reset-hardware.o
  .ARM.attributes
@@ -3303,7 +3303,7 @@ Discarded input sections
  .debug_macro   0x00000000       0xd7 ./src/write.o
  .debug_macro   0x00000000      0x513 ./src/write.o
  .debug_line    0x00000000      0x2d3 ./src/write.o
- .debug_str     0x00000000     0x70cd ./src/write.o
+ .debug_str     0x00000000     0x70d1 ./src/write.o
  .comment       0x00000000       0x6f ./src/write.o
  .debug_frame   0x00000000       0x28 ./src/write.o
  .ARM.attributes
@@ -4451,40 +4451,40 @@ END GROUP
  .debug_frame   0x000015f4       0x2c c:/dev/gnu tools arm embedded/5.4 2016q3/bin/../lib/gcc/arm-none-eabi/5.4.1/armv6-m\libgcc.a(floatsidf.o)
  .debug_frame   0x00001620       0x2c c:/dev/gnu tools arm embedded/5.4 2016q3/bin/../lib/gcc/arm-none-eabi/5.4.1/armv6-m\libgcc.a(floatunsidf.o)
 
-.debug_str      0x00000000    0x71d2a
+.debug_str      0x00000000    0x71d2e
  *(.debug_str)
- .debug_str     0x00000000    0x6ae1d ./system/src/stm32f0-hal/stm32f0xx_hal.o
-                              0x6b0cd (size before relaxing)
- .debug_str     0x0006ae1d      0x1ee ./system/src/stm32f0-hal/stm32f0xx_hal_cortex.o
-                              0x6aecc (size before relaxing)
- .debug_str     0x0006b00b      0x3fe ./system/src/stm32f0-hal/stm32f0xx_hal_rcc.o
-                              0x6af49 (size before relaxing)
- .debug_str     0x0006b409     0x4175 ./system/src/newlib/exit.o
-                               0x6d45 (size before relaxing)
- .debug_str     0x0006f57e      0x4dd ./system/src/newlib/sbrk.o
-                               0x6130 (size before relaxing)
- .debug_str     0x0006fa5b      0x265 ./system/src/newlib/startup.o
-                               0x5cb0 (size before relaxing)
- .debug_str     0x0006fcc0     0x104b ./system/src/newlib/syscalls.o
-                               0x7246 (size before relaxing)
- .debug_str     0x00070d0b      0x38d ./system/src/diag/trace-impl.o
-                              0x6e1c1 (size before relaxing)
- .debug_str     0x00071098      0x884 ./system/src/diag/trace.o
-                               0x7536 (size before relaxing)
- .debug_str     0x0007191c      0x109 ./system/src/cortexm/exception-handlers.o
-                              0x6ec20 (size before relaxing)
- .debug_str     0x00071a25       0x4d ./system/src/cortexm/initialize-hardware.o
-                              0x6aa96 (size before relaxing)
- .debug_str     0x00071a72       0x46 ./system/src/cmsis/system_stm32f0xx.o
-                              0x6ab0a (size before relaxing)
- .debug_str     0x00071ab8       0x59 ./system/src/cmsis/vectors_stm32f051x8.o
-                               0x330e (size before relaxing)
- .debug_str     0x00071b11       0x30 ./src/initialize-hardware.o
-                              0x6df18 (size before relaxing)
- .debug_str     0x00071b41      0x1ac ./src/main.o
-                              0x6f6c3 (size before relaxing)
- .debug_str     0x00071ced       0x3d ./src/stm32f0xx_hal_msp.o
-                              0x6aa55 (size before relaxing)
+ .debug_str     0x00000000    0x6ae21 ./system/src/stm32f0-hal/stm32f0xx_hal.o
+                              0x6b0d1 (size before relaxing)
+ .debug_str     0x0006ae21      0x1ee ./system/src/stm32f0-hal/stm32f0xx_hal_cortex.o
+                              0x6aed0 (size before relaxing)
+ .debug_str     0x0006b00f      0x3fe ./system/src/stm32f0-hal/stm32f0xx_hal_rcc.o
+                              0x6af4d (size before relaxing)
+ .debug_str     0x0006b40d     0x4175 ./system/src/newlib/exit.o
+                               0x6d49 (size before relaxing)
+ .debug_str     0x0006f582      0x4dd ./system/src/newlib/sbrk.o
+                               0x6134 (size before relaxing)
+ .debug_str     0x0006fa5f      0x265 ./system/src/newlib/startup.o
+                               0x5cb4 (size before relaxing)
+ .debug_str     0x0006fcc4     0x104b ./system/src/newlib/syscalls.o
+                               0x724a (size before relaxing)
+ .debug_str     0x00070d0f      0x38d ./system/src/diag/trace-impl.o
+                              0x6e1c5 (size before relaxing)
+ .debug_str     0x0007109c      0x884 ./system/src/diag/trace.o
+                               0x753a (size before relaxing)
+ .debug_str     0x00071920      0x109 ./system/src/cortexm/exception-handlers.o
+                              0x6ec24 (size before relaxing)
+ .debug_str     0x00071a29       0x4d ./system/src/cortexm/initialize-hardware.o
+                              0x6aa9a (size before relaxing)
+ .debug_str     0x00071a76       0x46 ./system/src/cmsis/system_stm32f0xx.o
+                              0x6ab0e (size before relaxing)
+ .debug_str     0x00071abc       0x59 ./system/src/cmsis/vectors_stm32f051x8.o
+                               0x3312 (size before relaxing)
+ .debug_str     0x00071b15       0x30 ./src/initialize-hardware.o
+                              0x6df1c (size before relaxing)
+ .debug_str     0x00071b45      0x1ac ./src/main.o
+                              0x6f6c7 (size before relaxing)
+ .debug_str     0x00071cf1       0x3d ./src/stm32f0xx_hal_msp.o
+                              0x6aa59 (size before relaxing)
 
 .debug_loc      0x00000000     0x17bd
  *(.debug_loc)

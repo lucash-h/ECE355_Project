@@ -80,7 +80,6 @@ void myEXTI2_3_Init(void);
 
 void myGPIOA_Init(void);
 void myTIM2_Init(void);
-void myEXTI_Init(void);
 void TIM3_Init(void);
 void TIM3_delay(void);
 
@@ -110,7 +109,7 @@ float getADCVoltage(void);
 float convertADCVoltageToResistance(float adcVoltage);
 uint16_t getDACVoltage(float adcVoltage);
 
-uint32_t timerTriggered = 1;
+uint32_t timerTriggered = 0;
 float period = 0;
 float voltage = 0;
 uint16_t test = 0;
@@ -288,7 +287,6 @@ unsigned char Characters[][8] = {
 // (say, timerTriggered = 0 or 1) to indicate
 // whether TIM2 has started counting or not.
 //uint32_t timerTriggered = 0;
-uint8_t current_state = 0; //0 for pa1, 1 for pa2
 
 
 void SystemClock48MHz( void )
@@ -330,6 +328,7 @@ void SystemClock48MHz( void )
 
 
 
+uint8_t current_state = 1;
 
 int
 main(int argc, char* argv[])
@@ -352,19 +351,13 @@ main(int argc, char* argv[])
 	myADC_Init();		/* Initialize ADC */
 	myDAC_Init();		/* Initialize DAC */
 
+	//current_state = 0;
+
 
 	while (1)
 	{
-        if(current_state == 0) { //current state => 1 => PA2
-        	//trace_printf("\nTRANSFER FROM PA1 TO PA2\n");
-        	//trace_printf("\nVALUES FROM FUNCTION GENERATOR\n");
-        } else {
-        	//trace_printf("\nTRANSFER FROM PA2 TO PA1\n");
-        	//trace_printf("\nVALUES FROM OPTOCOUPLER & NE555 TIMER\n");
 
-        }
 		//delay loop
-		TIM3_delay();
 
 		voltage = getADCVoltage();
 		Res = convertADCVoltageToResistance(voltage);
@@ -665,7 +658,7 @@ void TIM3_delay(void) {
 	// Wait for UIF flag to be set (indicating the timer overflowed)
 	int count = 0;
 	while (((TIM3->SR & TIM_SR_UIF) == 0)) {
-		if (count > 10000) {
+		if (count > 100) {
 			break;
 		}
 		count++;// Poll for UIF flag
@@ -792,7 +785,7 @@ void myEXTI2_3_Init(void) {
 
 	NVIC_EnableIRQ(EXTI2_3_IRQn);      // Enable EXTI2_3 IRQ
 	trace_printf("exti2-3 NVIC\n");
-	EXTI->PR |= EXTI_PR_PR2;
+	//EXTI->PR |= EXTI_PR_PR2;
 	trace_printf("CLEAR INTERRUPT");
 
 }
@@ -801,7 +794,72 @@ void myEXTI2_3_Init(void) {
 
 //FOR TESTING JUST THE BUTTON, USING A SWITCH IN BETWEEN NOTHING AND PA2(FUNCTION GENERATOR FROM FIRST PART)
 //For final test use function gen and ne555
+
 void EXTI0_1_IRQHandler() {
+	uint32_t clockCycles = 0;
+/*button press
+    if((EXTI->PR & EXTI_PR_PR0) != 0) { //if pending register is set
+        //EXTI->PR |= EXTI_PR_PR0; //clear pending register
+
+        trace_printf("\nBUTTON PRESSED\n");
+        TIM3_delay();
+
+        //uint32_t debounce_count = 0;
+        while((GPIOA->IDR & GPIO_IDR_ID0) != 0){
+            TIM3_delay();
+
+        } // wait for the button to be released
+*/
+
+		if((EXTI->PR & EXTI_PR_PR1) != 0) {
+			//EXTI->PR |= EXTI_PR_PR1;
+			//measure exti freq when sig = 0
+			if (current_state == 0) {
+				current_state = 1;
+				TIM2->CNT = ((uint16_t)0x0000);
+				TIM2->CR1 |= TIM_CR1_CEN;
+				trace_printf("NE555TIMER");
+				//calculating ne555 frequency
+			} else {
+				current_state = 0;
+				TIM2->CR1 &= ~(TIM_CR1_CEN);
+				clockCycles = TIM2->CNT;
+				period = (float)clockCycles / (float)SystemCoreClock;
+				Freq = 1 / period;
+				timerTriggered = 1;
+		}
+
+		//if btn is pressed
+		if((EXTI->PR & EXTI_PR_PR0) != 0) {
+			trace_printf("\nBUTTON PRESSED\n");
+			TIM3_delay();
+
+			       //uint32_t debounce_count = 0;
+			while((GPIOA->IDR & GPIO_IDR_ID0) != 0){
+				TIM3_delay();
+
+			if(current_state == 0) {
+				EXTI->IMR &= ~(EXTI_IMR_MR1);
+				EXTI->IMR |= (EXTI_IMR_MR2);
+			} else {
+				current_state = 0;
+				EXTI->IMR &= ~(EXTI_IMR_MR2);
+				EXTI->IMR |= (EXTI_IMR_MR1);
+			}
+		}
+		}
+
+       EXTI->PR |= EXTI_PR_PR0; //clear pending register
+
+}
+
+}
+
+
+/*
+void EXTI0_1_IRQHandler() {
+	uint32_t clockCycles = 0;
+
     if((EXTI->PR & EXTI_PR_PR0) != 0) { //if pending register is set
         //EXTI->PR |= EXTI_PR_PR0; //clear pending register
 
@@ -817,22 +875,39 @@ void EXTI0_1_IRQHandler() {
         trace_printf("\nBUTTON RELEASED\n");
         if(current_state == 0) {
         	trace_printf("\nCURRENT STATE WAS 0, NOW 1 WHICH IS FUNC GEN\n");
-        	EXTI2_3_IRQHandler();
+        	//EXTI2_3_IRQHandler();
         	current_state = 1;//switch state var to other
         } else {
         	trace_printf("CURRENT STATE WAS 1, NOW 0");
         	current_state = 0;
         }
 
-    } else {
-    	//trace_printf("SAKLDJASLDJAS");
+       EXTI->PR |= EXTI_PR_PR0; //clear pending register
     }
-    EXTI->PR |= EXTI_PR_PR0; //clear pending register
+    if (current_state == 0) {
+    	if ((EXTI->PR & EXTI_PR_PR0) != 0) {
 
+			if (timerTriggered == 0) {
+				timerTriggered = 1;
+				TIM2->CNT = ((uint16_t)0x0000);
+				TIM2->CR1 |= TIM_CR1_CEN;
+			} else {
+				timerTriggered = 0;
+				TIM2->CR1 &= ~(TIM_CR1_CEN);
+				clockCycles = TIM2->CNT;
+				period = (float)clockCycles / (float)SystemCoreClock;
+				Freq = 1 / period;
+				timerTriggered = 1;
+
+				trace_printf("\nVALUES FROM NE555\n");
+				trace_printf("Period of the NE555 signal: %f\n", period);
+				trace_printf("Frequency of the NE555 signal: %f\n", Freq);
+			}
+		}
+		EXTI->PR |= EXTI_PR_PR1;
+        }
 }
-
-
-
+*/
 /* This handler is declared in system/src/cmsis/vectors_stm32f051x8.c */
 void TIM2_IRQHandler()
 {
@@ -857,15 +932,15 @@ void EXTI2_3_IRQHandler()
 {
 	// Declare/initialize your local variables here...
 	uint32_t clockCycles = 0;
+	if(current_state == 1) {
 
-	/* Check if EXTI2 interrupt pending flag is indeed set */
-	if ((EXTI->PR & EXTI_PR_PR2) != 0)
-	{
+		/* Check if EXTI2 interrupt pending flag is indeed set */
+		if ((EXTI->PR & EXTI_PR_PR2) != 0)
+		{
 		//
 		// 1. If this is the first edge:
 		//	- Clear count register (TIM2->CNT).
 		//	- Start timer (TIM2->CR1).
-		if(current_state == 1) {
 			if (timerTriggered == 0) {//not sure I actually need this tbh
 				timerTriggered = 1;
 				TIM2->CNT = ((uint16_t)0x0000);
@@ -882,11 +957,10 @@ void EXTI2_3_IRQHandler()
 
 				period = (float)clockCycles/(float)SystemCoreClock;
 				Freq = 1/period;
-				timerTriggered = 1;
 
 				trace_printf("\nVALUES FROM FUNCTION GENERATOR\n");
-				trace_printf("Period of the input signal: %f\n", (uint32_t)period);
-				trace_printf("Frequency of the input signal: %f\n", (uint32_t)Freq);
+				trace_printf("Period of the input signal: %f\n", period);
+				trace_printf("Frequency of the input signal: %u\n", (uint32_t)Freq);
 			}
 		}
 		
@@ -900,7 +974,6 @@ void EXTI2_3_IRQHandler()
 		// NOTE: A pending register (PR) bit is cleared
 		// by writing 1 to it.
 		EXTI->PR |= EXTI_PR_PR2;
-
 	}
 }
 
@@ -922,7 +995,7 @@ void EXTI1_IRQHandler(void) {
 				
 				trace_printf("\nVALUES FROM NE555\n");
                 trace_printf("Period of the NE555 signal: %f\n", period);
-                trace_printf("Frequency of the NE555 signal: %f\n", Freq);
+                trace_printf("Frequency of the NE555 signal: %u\n", (uint16_t)Freq);
             }
         }
         EXTI->PR |= EXTI_PR_PR1;

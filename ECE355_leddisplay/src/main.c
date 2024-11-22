@@ -60,8 +60,8 @@
 //...
 
 
-unsigned int Freq = 0;  // Example: measured frequency value (global variable)
-unsigned int Res = 0;   // Example: measured resistance value (global variable)
+unsigned int Freq = 9999;  // Example: measured frequency value (global variable)
+unsigned int Res = 9999;   // Example: measured resistance value (global variable)
 
 
 void oled_Write(unsigned char);
@@ -305,8 +305,8 @@ main(int argc, char* argv[])
         trace_printf("\nFREQUENCY IS: %d\n", Freq);
         trace_printf("\nRESISTANCE IS: %d\n", Res);
 
-		Freq = 0;
-		Res = 0;
+		///Freq = 0;
+		//Res = 0;
 
 		refresh_OLED();
 
